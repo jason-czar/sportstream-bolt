@@ -125,6 +125,7 @@ const CameraStream: React.FC = () => {
 
   const startStreaming = async () => {
     try {
+      console.log('Starting camera stream for camera ID:', cameraId);
       setIsStreaming(true);
       
       // Update camera status in database to live
@@ -136,6 +137,13 @@ const CameraStream: React.FC = () => {
       if (error) {
         throw error;
       }
+
+      console.log('Camera marked as live in database');
+      console.log('RTMP streaming would start here with:', {
+        streamKey: state.streamKey,
+        ingestUrl: state.ingestUrl,
+        cameraId: cameraId
+      });
 
       toastService.success({
         description: "Camera stream started successfully!",
@@ -151,6 +159,7 @@ const CameraStream: React.FC = () => {
 
   const stopStreaming = async () => {
     try {
+      console.log('Stopping camera stream for camera ID:', cameraId);
       setIsStreaming(false);
       
       // Update camera status in database to not live
@@ -162,6 +171,8 @@ const CameraStream: React.FC = () => {
       if (error) {
         throw error;
       }
+
+      console.log('Camera marked as offline in database');
 
       toastService.success({
         description: "Camera stream stopped.",
