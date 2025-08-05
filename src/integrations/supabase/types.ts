@@ -71,6 +71,8 @@ export type Database = {
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
           streaming_type: string | null
+          telegram_channel_id: string | null
+          telegram_invite_link: string | null
           updated_at: string
           viewer_count: number | null
         }
@@ -89,6 +91,8 @@ export type Database = {
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
           streaming_type?: string | null
+          telegram_channel_id?: string | null
+          telegram_invite_link?: string | null
           updated_at?: string
           viewer_count?: number | null
         }
@@ -107,6 +111,8 @@ export type Database = {
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
           streaming_type?: string | null
+          telegram_channel_id?: string | null
+          telegram_invite_link?: string | null
           updated_at?: string
           viewer_count?: number | null
         }

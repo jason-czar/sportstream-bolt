@@ -16,6 +16,9 @@ interface EventData {
   youtube_key?: string;
   twitch_key?: string;
   updated_at?: string;
+  streaming_type?: string;
+  telegram_channel_id?: string;
+  telegram_invite_link?: string;
 }
 
 interface Camera {

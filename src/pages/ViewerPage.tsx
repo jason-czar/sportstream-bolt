@@ -9,6 +9,7 @@ import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
+import TelegramStreaming from "@/components/TelegramStreaming";
 
 interface EventData {
   id: string;
@@ -16,6 +17,9 @@ interface EventData {
   sport: string;
   status: string;
   program_url: string;
+  streaming_type?: string;
+  telegram_channel_id?: string;
+  telegram_invite_link?: string;
 }
 
 const ViewerPage = () => {
@@ -159,125 +163,143 @@ const ViewerPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Main Video Player */}
-      <div className="relative">
-        <div className="aspect-video bg-black">
-          {event.program_url && event.status === 'live' ? (
-            <video
-              ref={videoRef}
-              className="w-full h-full"
-              controls
-              muted
-              autoPlay
-              playsInline
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <div className="text-center text-white">
-                <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
-                <h3 className="text-xl font-semibold mb-2">
-                  {event.status === 'created' ? 'Stream Starting Soon' : 'Stream Offline'}
-                </h3>
-                <p className="opacity-75">
-                  {event.status === 'created' 
-                    ? 'The event will begin shortly. Stay tuned!' 
-                    : 'This stream has ended.'}
-                </p>
-              </div>
+      {/* Check if this is a Telegram streaming event */}
+      {event.streaming_type === 'telegram' ? (
+        <div className="container mx-auto px-4 py-6">
+          <TelegramStreaming
+            eventId={event.id}
+            eventName={event.name}
+            eventCode={event.id} // Using event ID as code for now
+            telegramChannelId={event.telegram_channel_id}
+            telegramInviteLink={event.telegram_invite_link}
+            isDirector={false}
+          />
+        </div>
+      ) : (
+        <>
+          {/* Main Video Player for Mobile/RTMP streaming */}
+          <div className="relative">
+            <div className="aspect-video bg-black">
+              {event.program_url && event.status === 'live' ? (
+                <video
+                  ref={videoRef}
+                  className="w-full h-full"
+                  controls
+                  muted
+                  autoPlay
+                  playsInline
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center text-white">
+                    <Play className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <h3 className="text-xl font-semibold mb-2">
+                      {event.status === 'created' ? 'Stream Starting Soon' : 'Stream Offline'}
+                    </h3>
+                    <p className="opacity-75">
+                      {event.status === 'created' 
+                        ? 'The event will begin shortly. Stay tuned!' 
+                        : 'This stream has ended.'}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Live Indicator */}
-        {event.status === 'live' && (
-          <div className="absolute top-4 left-4">
-            <Badge variant="destructive" className="bg-red-600 animate-pulse">
-              <Wifi className="h-3 w-3 mr-1" />
-              LIVE
-            </Badge>
+            {/* Live Indicator */}
+            {event.status === 'live' && (
+              <div className="absolute top-4 left-4">
+                <Badge variant="destructive" className="bg-red-600 animate-pulse">
+                  <Wifi className="h-3 w-3 mr-1" />
+                  LIVE
+                </Badge>
+              </div>
+            )}
+
+            {/* Viewer Count */}
+            <div className="absolute top-4 right-4 flex gap-2">
+              <Badge variant="secondary" className="bg-black/50 text-white">
+                <Eye className="h-3 w-3 mr-1" />
+                {viewerCount.toLocaleString()} watching
+              </Badge>
+              {useMemo(() => onlineUsers.length > 0 && (
+                <Badge variant="outline" className="bg-black/50 text-white border-white/20">
+                  <Users className="h-3 w-3 mr-1" />
+                  {onlineUsers.length} live
+                </Badge>
+              ), [onlineUsers.length])}
+            </div>
           </div>
-        )}
+        </>
+      )}
 
-        {/* Viewer Count */}
-        <div className="absolute top-4 right-4 flex gap-2">
-          <Badge variant="secondary" className="bg-black/50 text-white">
-            <Eye className="h-3 w-3 mr-1" />
-            {viewerCount.toLocaleString()} watching
-          </Badge>
-          {useMemo(() => onlineUsers.length > 0 && (
-            <Badge variant="outline" className="bg-black/50 text-white border-white/20">
-              <Users className="h-3 w-3 mr-1" />
-              {onlineUsers.length} live
-            </Badge>
-          ), [onlineUsers.length])}
-        </div>
-      </div>
-
-      {/* Event Info */}
-      <div className="container mx-auto px-4 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>{event.name}</CardTitle>
-                <CardDescription className="flex items-center gap-4">
-                  <span>Sport: {event.sport}</span>
-                  <Badge variant={event.status === 'live' ? 'default' : 'secondary'}>
-                    {event.status}
-                  </Badge>
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Experience the action from multiple camera angles with our live multi-camera sports streaming.
-                  Professional-grade coverage with real-time camera switching for the best viewing experience.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Chat/Social Section */}
-          <div className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Live Chat</CardTitle>
-                <CardDescription>
-                  Connect with other viewers
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-64 bg-muted rounded-md flex items-center justify-center">
-                  <p className="text-sm text-muted-foreground text-center">
-                    Live chat integration would appear here
-                    <br />
-                    (YouTube/Twitch chat embeds)
+      {/* Event Info - Only show for non-Telegram events */}
+      {event.streaming_type !== 'telegram' && (
+        <div className="container mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>{event.name}</CardTitle>
+                  <CardDescription className="flex items-center gap-4">
+                    <span>Sport: {event.sport}</span>
+                    <Badge variant={event.status === 'live' ? 'default' : 'secondary'}>
+                      {event.status}
+                    </Badge>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Experience the action from multiple camera angles with our live multi-camera sports streaming.
+                    Professional-grade coverage with real-time camera switching for the best viewing experience.
                   </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Event Stats</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Current Viewers</span>
-                  <span className="text-sm font-medium">{viewerCount.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Stream Quality</span>
-                  <span className="text-sm font-medium">1080p</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">Latency</span>
-                  <span className="text-sm font-medium">~3-5s</span>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Chat/Social Section */}
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Live Chat</CardTitle>
+                  <CardDescription>
+                    Connect with other viewers
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-64 bg-muted rounded-md flex items-center justify-center">
+                    <p className="text-sm text-muted-foreground text-center">
+                      Live chat integration would appear here
+                      <br />
+                      (YouTube/Twitch chat embeds)
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Event Stats</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Current Viewers</span>
+                    <span className="text-sm font-medium">{viewerCount.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Stream Quality</span>
+                    <span className="text-sm font-medium">1080p</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Latency</span>
+                    <span className="text-sm font-medium">~3-5s</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
