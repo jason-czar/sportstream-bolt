@@ -26,7 +26,8 @@ const CreateEvent = () => {
     eventName: "",
     sportType: "",
     dateTime: "",
-    expectedDuration: ""
+    expectedDuration: "",
+    streamingType: ""
   });
 
   // Set default datetime to 1 hour from now
@@ -70,6 +71,9 @@ const CreateEvent = () => {
       if (!formData.expectedDuration || parseInt(formData.expectedDuration) < 1) {
         throw new Error('Expected duration must be at least 1 minute');
       }
+      if (!formData.streamingType) {
+        throw new Error('Streaming type is required');
+      }
 
       // Generate unique event code
       const eventCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -84,7 +88,8 @@ const CreateEvent = () => {
           sport: formData.sportType,
           startTime: formData.dateTime,
           expectedDuration: parseInt(formData.expectedDuration),
-          eventCode
+          eventCode,
+          streamingType: formData.streamingType
         }
       });
 
@@ -196,11 +201,38 @@ const CreateEvent = () => {
                 </div>
               </div>
 
+              <div className="space-y-2">
+                <Label htmlFor="streamingType">Streaming Type</Label>
+                <Select 
+                  value={formData.streamingType} 
+                  onValueChange={(value) => setFormData({...formData, streamingType: value})}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select streaming approach" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mobile">Mobile Streaming (Direct RTMP)</SelectItem>
+                    <SelectItem value="telegram">Telegram Integration</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-sm text-muted-foreground">
+                  Choose how you want to stream your event. Mobile streaming uses direct RTMP for professional quality, while Telegram integration leverages Telegram's infrastructure.
+                </p>
+              </div>
+
               <div className="space-y-4">
                 <div className="p-4 bg-muted rounded-lg">
                   <h3 className="text-sm font-medium text-muted-foreground">Live Streaming</h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    This event will be automatically streamed to the app's YouTube channel (@jason_czar) and Twitch account.
+                    {formData.streamingType === 'mobile' && 
+                      'Events will use direct RTMP streaming for professional quality video transmission to YouTube and Twitch.'
+                    }
+                    {formData.streamingType === 'telegram' && 
+                      'Events will leverage Telegram\'s infrastructure for streaming capabilities with integrated social features.'
+                    }
+                    {!formData.streamingType && 
+                      'Select a streaming type above to see details about your streaming setup.'
+                    }
                   </p>
                 </div>
               </div>
