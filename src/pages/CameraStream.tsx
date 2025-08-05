@@ -9,6 +9,7 @@ import { Camera, Mic, MicOff, Video, VideoOff, Settings, LogOut, SwitchCamera, C
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toastService } from '@/lib/toast-service';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LocationState {
   streamKey: string;
@@ -123,18 +124,54 @@ const CameraStream: React.FC = () => {
   };
 
   const startStreaming = async () => {
-    // TODO: Implement actual RTMP streaming
-    setIsStreaming(true);
-    toastService.success({
-      description: "Camera stream started successfully!",
-    });
+    try {
+      setIsStreaming(true);
+      
+      // Update camera status in database to live
+      const { error } = await supabase
+        .from('cameras')
+        .update({ is_live: true })
+        .eq('id', cameraId);
+
+      if (error) {
+        throw error;
+      }
+
+      toastService.success({
+        description: "Camera stream started successfully!",
+      });
+    } catch (error) {
+      console.error('Error starting camera stream:', error);
+      setIsStreaming(false);
+      toastService.error({
+        description: "Failed to start camera stream. Please try again.",
+      });
+    }
   };
 
-  const stopStreaming = () => {
-    setIsStreaming(false);
-    toastService.success({
-      description: "Camera stream stopped.",
-    });
+  const stopStreaming = async () => {
+    try {
+      setIsStreaming(false);
+      
+      // Update camera status in database to not live
+      const { error } = await supabase
+        .from('cameras')
+        .update({ is_live: false })
+        .eq('id', cameraId);
+
+      if (error) {
+        throw error;
+      }
+
+      toastService.success({
+        description: "Camera stream stopped.",
+      });
+    } catch (error) {
+      console.error('Error stopping camera stream:', error);
+      toastService.error({
+        description: "Failed to stop camera stream.",
+      });
+    }
   };
 
   const leaveEvent = () => {
