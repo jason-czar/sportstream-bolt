@@ -177,8 +177,13 @@ const CreateEvent = () => {
                       size="sm"
                       onClick={() => {
                         const now = new Date();
-                        const currentDateTime = now.toISOString().slice(0, 16);
-                        setFormData({...formData, dateTime: currentDateTime});
+                        const year = now.getFullYear();
+                        const month = String(now.getMonth() + 1).padStart(2, '0');
+                        const day = String(now.getDate()).padStart(2, '0');
+                        const hours = String(now.getHours()).padStart(2, '0');
+                        const minutes = String(now.getMinutes()).padStart(2, '0');
+                        const localDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+                        setFormData({...formData, dateTime: localDateTime});
                       }}
                     >
                       Now
