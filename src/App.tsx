@@ -14,6 +14,7 @@ import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
 import JoinAsCamera from "./pages/JoinAsCamera";
 import CameraStream from "./pages/CameraStream";
+import TelegramCameraStream from "./pages/TelegramCameraStream";
 import DirectorDashboard from "./pages/DirectorDashboard";
 import ViewerPage from "./pages/ViewerPage";
 import UserProfile from "./pages/UserProfile";
@@ -80,6 +81,16 @@ const App = () => {
                   <ErrorBoundary>
                     <ProtectedRoute>
                       <CameraStream />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/camera/telegram/:eventId" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <TelegramCameraStream />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 } 

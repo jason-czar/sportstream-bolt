@@ -147,9 +147,11 @@ const JoinAsCamera = () => {
       const generatedLabel = await generateDeviceLabel(data.id);
       setDeviceLabel(generatedLabel);
       
+      console.log('Event found with streaming type:', data.streaming_type);
+      
       toastService.success({
         title: "Event found!",
-        description: `Ready to join: ${data.name}`,
+        description: `Ready to join: ${data.name} (${data.streaming_type === 'telegram' ? 'Telegram' : 'RTMP'} streaming)`,
       });
     } catch (error) {
       console.error('Error validating event code:', error);
@@ -171,7 +173,30 @@ const JoinAsCamera = () => {
 
     setLoading(true);
     try {
-      // Register camera with backend
+      // Check streaming type and handle accordingly
+      if (eventData.streaming_type === 'telegram') {
+        console.log('Connecting to Telegram event - redirecting to Telegram integration');
+        
+        // For Telegram events, navigate to a Telegram-specific camera page
+        toastService.success({
+          title: "Joining Telegram Event",
+          description: "Redirecting to Telegram streaming interface...",
+        });
+        
+        // Navigate to telegram camera interface
+        navigate(`/camera/telegram/${eventData.id}`, {
+          state: { 
+            eventData,
+            deviceLabel: deviceLabel.trim()
+          } 
+        });
+        return;
+      }
+      
+      // For mobile/RTMP events, use the existing flow
+      console.log('Connecting to RTMP event');
+      
+      // Register camera with backend for RTMP streaming
       const { data, error } = await supabase.functions.invoke('register-camera', {
         headers: {
           Authorization: `Bearer ${session.access_token}`
@@ -187,7 +212,7 @@ const JoinAsCamera = () => {
 
       toastService.event.cameraConnected(deviceLabel.trim());
 
-      // Navigate to camera streaming page
+      // Navigate to RTMP camera streaming page
       navigate(`/camera/${data.cameraId}`, {
         state: { 
           streamKey: data.streamKey,
@@ -305,7 +330,15 @@ const JoinAsCamera = () => {
                       <p><strong>Name:</strong> {eventData.name}</p>
                       <p><strong>Sport:</strong> {eventData.sport}</p>
                       <p><strong>Status:</strong> {eventData.status}</p>
+                      <p><strong>Streaming Type:</strong> {eventData.streaming_type === 'telegram' ? 'Telegram Integration' : 'Mobile RTMP'}</p>
                     </div>
+                    {eventData.streaming_type === 'telegram' && (
+                      <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p className="text-sm text-blue-800">
+                          🔹 This event uses Telegram's streaming infrastructure for social features and multi-platform broadcasting.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
 

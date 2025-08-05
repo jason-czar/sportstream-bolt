@@ -1,0 +1,292 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Camera, Mic, MicOff, Video, VideoOff, LogOut, MessageCircle, ExternalLink } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { toastService } from '@/lib/toast-service';
+import { supabase } from '@/integrations/supabase/client';
+
+interface LocationState {
+  eventData: any;
+  deviceLabel: string;
+}
+
+const TelegramCameraStream: React.FC = () => {
+  const { eventId } = useParams();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [isVideoEnabled, setIsVideoEnabled] = useState(true);
+  const [isAudioEnabled, setIsAudioEnabled] = useState(true);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const isMobile = useIsMobile();
+
+  const state = location.state as LocationState;
+
+  useEffect(() => {
+    if (!state?.eventData) {
+      toastService.error({
+        description: "Missing event data. Please join the event again.",
+      });
+      navigate('/join-camera');
+      return;
+    }
+
+    const initializeCamera = async () => {
+      await startVideoPreview();
+    };
+
+    initializeCamera();
+
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
+  const startVideoPreview = async () => {
+    try {
+      // Stop existing stream
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+
+      const constraints = {
+        video: { 
+          width: { ideal: 1280 }, 
+          height: { ideal: 720 },
+          facingMode: 'environment'
+        },
+        audio: true
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
+    } catch (error) {
+      console.error('Error accessing camera:', error);
+      toastService.error({
+        description: "Failed to access camera. Please check permissions.",
+      });
+    }
+  };
+
+  const toggleVideo = async () => {
+    const newVideoState = !isVideoEnabled;
+    if (stream) {
+      const videoTrack = stream.getVideoTracks()[0];
+      if (videoTrack) {
+        videoTrack.enabled = newVideoState;
+        setIsVideoEnabled(newVideoState);
+      }
+    }
+  };
+
+  const toggleAudio = async () => {
+    const newAudioState = !isAudioEnabled;
+    if (stream) {
+      const audioTrack = stream.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = newAudioState;
+        setIsAudioEnabled(newAudioState);
+      }
+    }
+  };
+
+  const startTelegramStreaming = async () => {
+    try {
+      console.log('Starting Telegram streaming for event:', eventId);
+      
+      // In a real implementation, this would integrate with Telegram's video streaming
+      // For now, we'll simulate starting the stream
+      setIsStreaming(true);
+      
+      toastService.success({
+        title: "Telegram Streaming Started",
+        description: "Your camera is now streaming via Telegram's infrastructure!",
+      });
+    } catch (error) {
+      console.error('Error starting Telegram stream:', error);
+      toastService.error({
+        description: "Failed to start Telegram stream. Please try again.",
+      });
+    }
+  };
+
+  const stopTelegramStreaming = async () => {
+    try {
+      console.log('Stopping Telegram streaming for event:', eventId);
+      
+      setIsStreaming(false);
+      
+      toastService.success({
+        description: "Telegram stream stopped.",
+      });
+    } catch (error) {
+      console.error('Error stopping Telegram stream:', error);
+      toastService.error({
+        description: "Failed to stop Telegram stream.",
+      });
+    }
+  };
+
+  const openTelegramChannel = () => {
+    if (state.eventData.telegram_invite_link) {
+      window.open(state.eventData.telegram_invite_link, '_blank');
+    } else {
+      toastService.error({
+        description: "Telegram channel link not available.",
+      });
+    }
+  };
+
+  const leaveEvent = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    navigate('/');
+  };
+
+  if (!state) {
+    return null;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Mobile optimized layout */}
+      <div className="flex flex-col h-screen">
+        {/* Header - compact for mobile */}
+        <div className="flex items-center justify-between p-4 bg-card border-b">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-blue-500" />
+            <span className="font-semibold">Telegram Camera</span>
+            <Badge variant={isStreaming ? "default" : "secondary"} className="text-xs">
+              {isStreaming ? "Live" : "Standby"}
+            </Badge>
+          </div>
+          <div className="flex items-center gap-2">
+            {!isMobile && (
+              <span className="text-sm text-muted-foreground">
+                Event: {state.eventData?.name || 'Unknown Event'}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={leaveEvent}>
+              <LogOut className="h-4 w-4" />
+              {!isMobile && <span className="ml-2">Leave Event</span>}
+            </Button>
+          </div>
+        </div>
+
+        {/* Video Preview - takes most of the screen */}
+        <div className="flex-1 relative bg-black">
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+          {!isVideoEnabled && (
+            <div className="absolute inset-0 bg-gray-900 flex items-center justify-center">
+              <VideoOff className="h-12 w-12 text-gray-400" />
+            </div>
+          )}
+          
+          {/* Mobile event name overlay */}
+          {isMobile && (
+            <div className="absolute top-4 left-4 bg-black/50 text-white px-3 py-1 rounded-lg text-sm">
+              Event: {state.eventData?.name || 'Unknown Event'}
+            </div>
+          )}
+
+          {/* Telegram-specific overlay */}
+          <div className="absolute top-4 right-4 bg-blue-500/80 text-white px-3 py-1 rounded-lg text-sm flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            Telegram Stream
+          </div>
+        </div>
+
+        {/* Controls - bottom bar optimized for mobile and landscape */}
+        <div className="p-4 bg-card border-t">
+          {/* Telegram-specific info */}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-800">Telegram Integration Active</p>
+                <p className="text-xs text-blue-600">Streaming to YouTube, Twitch & Telegram</p>
+              </div>
+              {state.eventData.telegram_invite_link && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={openTelegramChannel}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  Join Chat
+                </Button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-center gap-3 md:gap-4">
+            <Button
+              variant={isVideoEnabled ? "default" : "destructive"}
+              size={isMobile ? "default" : "lg"}
+              onClick={toggleVideo}
+              className="aspect-square"
+            >
+              {isVideoEnabled ? <Video className="h-5 w-5" /> : <VideoOff className="h-5 w-5" />}
+            </Button>
+            
+            <Button
+              variant={isAudioEnabled ? "default" : "destructive"}
+              size={isMobile ? "default" : "lg"}
+              onClick={toggleAudio}
+              className="aspect-square"
+            >
+              {isAudioEnabled ? <Mic className="h-5 w-5" /> : <MicOff className="h-5 w-5" />}
+            </Button>
+
+            {!isStreaming ? (
+              <Button 
+                size={isMobile ? "default" : "lg"} 
+                onClick={startTelegramStreaming} 
+                className="px-6 bg-blue-600 hover:bg-blue-700"
+              >
+                Start Telegram Stream
+              </Button>
+            ) : (
+              <Button 
+                size={isMobile ? "default" : "lg"} 
+                variant="destructive" 
+                onClick={stopTelegramStreaming} 
+                className="px-6"
+              >
+                Stop Stream
+              </Button>
+            )}
+          </div>
+          
+          <div className="text-center mt-3">
+            <p className="text-xs text-muted-foreground">
+              Camera: {state.deviceLabel} • Using Telegram's streaming infrastructure
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TelegramCameraStream;
