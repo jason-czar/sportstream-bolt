@@ -12,7 +12,9 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorMessage from "@/components/error/ErrorMessage";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings } from "lucide-react";
+import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings, Eye } from "lucide-react";
+import { useRealtimePresence } from "@/hooks/useRealtimePresence";
+import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 
 interface Camera {
   id: string;
@@ -36,85 +38,23 @@ interface EventData {
 const DirectorDashboard = () => {
   const { eventId } = useParams();
   const { handleAsyncError } = useErrorHandler();
-  const [event, setEvent] = useState<EventData | null>(null);
-  const [cameras, setCameras] = useState<Camera[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [streaming, setStreaming] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId] = useState(`director_${Math.random().toString(36).substr(2, 9)}`);
+  
+  // Use real-time hooks
+  const { viewerCount } = useRealtimePresence({ 
+    eventId: eventId || '', 
+    userId: currentUserId 
+  });
+  
+  const { event, cameras, loading: dataLoading } = useRealtimeEventUpdates({
+    eventId: eventId || ''
+  });
+  
+  const streaming = event?.status === 'live';
 
-  useEffect(() => {
-    if (eventId) {
-      loadEventData();
-      loadCameras();
-      subscribeToUpdates();
-    }
-  }, [eventId]);
 
-  const loadEventData = async () => {
-    setError(null);
-    
-    const { data, error } = await handleAsyncError(async () => {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', eventId)
-        .single();
-
-      if (error) throw error;
-      setEvent(data);
-      setStreaming(data.status === 'live');
-      return data;
-    }, {
-      title: "Failed to load event",
-      showToast: false
-    });
-
-    if (error) {
-      setError("Failed to load event data. Please refresh the page and try again.");
-    }
-  };
-
-  const loadCameras = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('cameras')
-        .select('*')
-        .eq('event_id', eventId)
-        .order('created_at');
-
-      if (error) throw error;
-      setCameras(data || []);
-    } catch (error) {
-      console.error('Error loading cameras:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribeToUpdates = () => {
-    // Subscribe to camera updates
-    const cameraChannel = supabase
-      .channel('cameras')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'cameras', filter: `event_id=eq.${eventId}` },
-        () => loadCameras()
-      )
-      .subscribe();
-
-    // Subscribe to event updates
-    const eventChannel = supabase
-      .channel('events')
-      .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
-        () => loadEventData()
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(cameraChannel);
-      supabase.removeChannel(eventChannel);
-    };
-  };
 
   const setActiveCamera = async (cameraId: string) => {
     try {
@@ -163,7 +103,6 @@ const DirectorDashboard = () => {
         .update({ status: 'live' })
         .eq('id', eventId);
 
-      setStreaming(true);
       toastService.event.streamStarted();
     } catch (error) {
       console.error('Error starting stream:', error);
@@ -189,7 +128,6 @@ const DirectorDashboard = () => {
         .update({ status: 'ended' })
         .eq('id', eventId);
 
-      setStreaming(false);
       toastService.event.streamEnded();
     } catch (error) {
       console.error('Error ending stream:', error);
@@ -221,7 +159,7 @@ const DirectorDashboard = () => {
     }
   };
 
-  if (loading && !event) {
+  if (dataLoading && !event) {
     return <LoadingSpinner fullScreen text="Loading director dashboard..." />;
   }
 
@@ -231,7 +169,7 @@ const DirectorDashboard = () => {
         <ErrorMessage
           title="Unable to load director dashboard"
           message={error}
-          onRetry={loadEventData}
+          onRetry={() => window.location.reload()}
           className="max-w-md"
         />
       </div>
@@ -250,12 +188,18 @@ const DirectorDashboard = () => {
                   <Monitor className="h-6 w-6" />
                   {event?.name}
                 </CardTitle>
-                <CardDescription>
-                  Event Code: <span className="font-mono font-bold">{event?.event_code}</span> | 
-                  Sport: {event?.sport} | 
-                  Status: <Badge variant={streaming ? "default" : "secondary"}>
+                <CardDescription className="flex items-center gap-4 flex-wrap">
+                  <span>Event Code: <span className="font-mono font-bold">{event?.event_code}</span></span>
+                  <span>Sport: {event?.sport}</span>
+                  <Badge variant={streaming ? "default" : "secondary"}>
                     {event?.status}
                   </Badge>
+                  {viewerCount > 0 && (
+                    <Badge variant="outline" className="flex items-center gap-1">
+                      <Eye className="h-3 w-3" />
+                      {viewerCount} watching
+                    </Badge>
+                  )}
                 </CardDescription>
               </div>
               <div className="flex gap-2">

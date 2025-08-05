@@ -3,10 +3,12 @@ import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Play, Users, Wifi } from "lucide-react";
+import { Play, Users, Wifi, Eye } from "lucide-react";
 import Hls from "hls.js";
 import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
+import { useRealtimePresence } from "@/hooks/useRealtimePresence";
+import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 
 interface EventData {
   id: string;
@@ -20,22 +22,37 @@ const ViewerPage = () => {
   const { eventId } = useParams();
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const [event, setEvent] = useState<EventData | null>(null);
-  const [viewerCount] = useState(Math.floor(Math.random() * 500) + 50); // Mock viewer count
-  const [loading, setLoading] = useState(true);
+  const [currentUserId] = useState(`viewer_${Math.random().toString(36).substr(2, 9)}`);
+  
+  // Use real-time hooks
+  const { viewerCount, onlineUsers } = useRealtimePresence({ 
+    eventId: eventId || '', 
+    userId: currentUserId 
+  });
+  
+  const { event, loading } = useRealtimeEventUpdates({
+    eventId: eventId || '',
+    onEventUpdate: (updatedEvent) => {
+      // Re-initialize player if program URL changes
+      if (updatedEvent.program_url !== event?.program_url) {
+        setTimeout(() => initializePlayer(), 100);
+      }
+    },
+    onCameraSwitch: () => {
+      // Reload HLS when camera switches
+      if (hlsRef.current && event?.program_url) {
+        hlsRef.current.loadSource(event.program_url);
+      }
+    }
+  });
 
   useEffect(() => {
-    if (eventId) {
-      loadEventData();
-      subscribeToUpdates();
-    }
-
     return () => {
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
     };
-  }, [eventId]);
+  }, []);
 
   useEffect(() => {
     if (event?.program_url && videoRef.current) {
@@ -43,54 +60,6 @@ const ViewerPage = () => {
     }
   }, [event?.program_url]);
 
-  const loadEventData = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('events')
-        .select('*')
-        .eq('id', eventId)
-        .single();
-
-      if (error) throw error;
-      setEvent(data);
-    } catch (error) {
-      console.error('Error loading event:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const subscribeToUpdates = () => {
-    // Subscribe to event updates for program feed changes
-    const eventChannel = supabase
-      .channel('events')
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'events', filter: `id=eq.${eventId}` },
-        (payload) => {
-          setEvent(payload.new as EventData);
-        }
-      )
-      .subscribe();
-
-    // Subscribe to camera switches via switch_logs
-    const switchChannel = supabase
-      .channel('switch_logs')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'switch_logs', filter: `event_id=eq.${eventId}` },
-        () => {
-          // Reload the HLS player when camera switches
-          if (hlsRef.current && event?.program_url) {
-            hlsRef.current.loadSource(event.program_url);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(eventChannel);
-      supabase.removeChannel(switchChannel);
-    };
-  };
 
   const initializePlayer = () => {
     if (!videoRef.current || !event?.program_url) return;
@@ -226,11 +195,17 @@ const ViewerPage = () => {
         )}
 
         {/* Viewer Count */}
-        <div className="absolute top-4 right-4">
+        <div className="absolute top-4 right-4 flex gap-2">
           <Badge variant="secondary" className="bg-black/50 text-white">
-            <Users className="h-3 w-3 mr-1" />
-            {viewerCount.toLocaleString()} viewers
+            <Eye className="h-3 w-3 mr-1" />
+            {viewerCount.toLocaleString()} watching
           </Badge>
+          {onlineUsers.length > 0 && (
+            <Badge variant="outline" className="bg-black/50 text-white border-white/20">
+              <Users className="h-3 w-3 mr-1" />
+              {onlineUsers.length} live
+            </Badge>
+          )}
         </div>
       </div>
 
