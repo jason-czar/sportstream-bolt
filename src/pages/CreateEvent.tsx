@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LoadingButton from "@/components/ui/LoadingButton";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,15 @@ const CreateEvent = () => {
     twitchKey: ""
   });
 
+  // Set default datetime to 1 hour from now
+  useEffect(() => {
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    now.setMinutes(0, 0, 0); // Round to the hour
+    const defaultDateTime = now.toISOString().slice(0, 16);
+    setFormData(prev => ({ ...prev, dateTime: defaultDateTime }));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -59,6 +68,14 @@ const CreateEvent = () => {
       if (!formData.dateTime) {
         throw new Error('Start date and time is required');
       }
+      
+      // Validate that the start time is in the future
+      const startTime = new Date(formData.dateTime);
+      const now = new Date();
+      if (startTime <= now) {
+        throw new Error('Start time must be in the future');
+      }
+      
       if (!formData.expectedDuration || parseInt(formData.expectedDuration) < 1) {
         throw new Error('Expected duration must be at least 1 minute');
       }
