@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { toastService } from "@/lib/toast-service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
@@ -32,11 +33,7 @@ const CreateEvent = () => {
 
     const { data, error } = await handleAsyncError(async () => {
       if (!session) {
-        toast({
-          title: "Authentication required",
-          description: "Please sign in to create an event.",
-          variant: "destructive"
-        });
+        toastService.auth.sessionExpired();
         navigate('/auth');
         throw new Error('Authentication required');
       }
@@ -76,11 +73,7 @@ const CreateEvent = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Event Created!",
-        description: `Event code: ${eventCode}. Share this with camera operators.`,
-      });
-
+      toastService.event.created(eventCode);
       return { eventId: data.eventId, eventCode };
     }, {
       title: "Failed to create event",

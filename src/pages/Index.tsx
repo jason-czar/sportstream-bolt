@@ -4,23 +4,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Video, Users, Monitor, Play, User, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { toastService } from "@/lib/toast-service";
 
 const Index = () => {
   const { user, profile, signOut, loading } = useAuth();
-  const { toast } = useToast();
 
   const handleSignOut = async () => {
     try {
       await signOut();
-      toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
-      });
+      toastService.auth.signOutSuccess();
     } catch (error) {
-      toast({
-        title: "Error",
+      console.error('Error signing out:', error);
+      toastService.error({
         description: "Failed to sign out. Please try again.",
-        variant: "destructive"
       });
     }
   };

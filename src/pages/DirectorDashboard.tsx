@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { toastService } from "@/lib/toast-service";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorMessage from "@/components/error/ErrorMessage";
@@ -133,16 +134,14 @@ const DirectorDashboard = () => {
         body: { eventId, cameraId }
       });
 
-      toast({
-        title: "Camera Switched",
-        description: "Program feed updated successfully.",
-      });
+      const activeCamera = cameras.find(cam => cam.id === cameraId);
+      if (activeCamera) {
+        toastService.event.cameraSwitched(activeCamera.device_label);
+      }
     } catch (error) {
       console.error('Error switching camera:', error);
-      toast({
-        title: "Error",
-        description: "Failed to switch camera.",
-        variant: "destructive"
+      toastService.error({
+        description: "Failed to switch camera. Please try again.",
       });
     }
   };
@@ -162,16 +161,11 @@ const DirectorDashboard = () => {
         .eq('id', eventId);
 
       setStreaming(true);
-      toast({
-        title: "Stream Started",
-        description: "Live stream is now active!",
-      });
+      toastService.event.streamStarted();
     } catch (error) {
       console.error('Error starting stream:', error);
-      toast({
-        title: "Error",
-        description: "Failed to start stream.",
-        variant: "destructive"
+      toastService.error({
+        description: "Failed to start stream. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -193,16 +187,11 @@ const DirectorDashboard = () => {
         .eq('id', eventId);
 
       setStreaming(false);
-      toast({
-        title: "Stream Ended",
-        description: "Live stream has been stopped.",
-      });
+      toastService.event.streamEnded();
     } catch (error) {
       console.error('Error ending stream:', error);
-      toast({
-        title: "Error",
-        description: "Failed to end stream.",
-        variant: "destructive"
+      toastService.error({
+        description: "Failed to end stream. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -218,16 +207,11 @@ const DirectorDashboard = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Simulcast Added",
-        description: "YouTube and Twitch streams configured successfully.",
-      });
+      toastService.event.simulcastConfigured();
     } catch (error) {
       console.error('Error adding simulcast:', error);
-      toast({
-        title: "Error",
-        description: "Failed to configure simulcast targets.",
-        variant: "destructive"
+      toastService.error({
+        description: "Failed to configure simulcast targets. Please try again.",
       });
     } finally {
       setLoading(false);

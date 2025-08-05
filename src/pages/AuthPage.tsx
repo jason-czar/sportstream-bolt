@@ -7,11 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { toastService } from '@/lib/toast-service';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 
 const AuthPage = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -35,16 +35,13 @@ const AuthPage = () => {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        toast({
-          title: "Welcome!",
-          description: "You have successfully signed in.",
-        });
+        toastService.auth.signInSuccess();
         navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, toast]);
+  }, [navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData(prev => ({
@@ -56,10 +53,8 @@ const AuthPage = () => {
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Please fill in all fields.",
-        variant: "destructive"
       });
       return;
     }
@@ -73,25 +68,21 @@ const AuthPage = () => {
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          toast({
+          toastService.error({
             title: "Invalid credentials",
             description: "Please check your email and password.",
-            variant: "destructive"
           });
         } else {
-          toast({
+          toastService.error({
             title: "Sign in failed",
             description: error.message,
-            variant: "destructive"
           });
         }
       }
     } catch (error) {
       console.error('Sign in error:', error);
-      toast({
-        title: "Error",
+      toastService.error({
         description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
       });
     } finally {
       setLoading(false);
@@ -101,28 +92,22 @@ const AuthPage = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.email || !formData.password || !formData.confirmPassword || !formData.fullName) {
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Please fill in all fields.",
-        variant: "destructive"
       });
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Passwords do not match.",
-        variant: "destructive"
       });
       return;
     }
 
     if (formData.password.length < 6) {
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Password must be at least 6 characters long.",
-        variant: "destructive"
       });
       return;
     }
@@ -142,30 +127,23 @@ const AuthPage = () => {
 
       if (error) {
         if (error.message.includes('User already registered')) {
-          toast({
+          toastService.error({
             title: "Account exists",
             description: "An account with this email already exists. Please sign in instead.",
-            variant: "destructive"
           });
         } else {
-          toast({
+          toastService.error({
             title: "Sign up failed",
             description: error.message,
-            variant: "destructive"
           });
         }
       } else {
-        toast({
-          title: "Check your email",
-          description: "We've sent you a confirmation link to complete your registration.",
-        });
+        toastService.auth.signUpSuccess();
       }
     } catch (error) {
       console.error('Sign up error:', error);
-      toast({
-        title: "Error",
+      toastService.error({
         description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
       });
     } finally {
       setLoading(false);

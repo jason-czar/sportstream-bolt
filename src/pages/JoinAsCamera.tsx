@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { toastService } from "@/lib/toast-service";
 import { useAuth } from "@/hooks/useAuth";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,8 +52,9 @@ const JoinAsCamera = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
+      toastService.camera.accessGranted();
     }, {
-      title: "Camera Access Error",
+      title: "Camera access failed",
       fallbackMessage: "Please allow camera and microphone access to continue.",
       showToast: true
     });
@@ -64,20 +66,14 @@ const JoinAsCamera = () => {
 
   const validateEventCode = async () => {
     if (!eventCode.trim()) {
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Please enter an event code.",
-        variant: "destructive"
       });
       return;
     }
 
     if (!session) {
-      toast({
-        title: "Authentication required",
-        description: "Please sign in to join as a camera operator.",
-        variant: "destructive"
-      });
+      toastService.auth.sessionExpired();
       navigate('/auth');
       return;
     }
@@ -91,25 +87,19 @@ const JoinAsCamera = () => {
         .single();
 
       if (error || !data) {
-        toast({
-          title: "Invalid Event Code",
-          description: "Event not found. Please check the code and try again.",
-          variant: "destructive"
-        });
+        toastService.event.eventNotFound();
         return;
       }
 
       setEventData(data);
-      toast({
-        title: "Event Found!",
+      toastService.success({
+        title: "Event found!",
         description: `Ready to join: ${data.name}`,
       });
     } catch (error) {
       console.error('Error validating event code:', error);
-      toast({
-        title: "Error",
-        description: "Failed to validate event code.",
-        variant: "destructive"
+      toastService.error({
+        description: "Failed to validate event code. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -118,10 +108,8 @@ const JoinAsCamera = () => {
 
   const registerCamera = async () => {
     if (!eventData || !deviceLabel.trim()) {
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Please enter a device label and validate the event code first.",
-        variant: "destructive"
       });
       return;
     }
@@ -142,13 +130,10 @@ const JoinAsCamera = () => {
 
       if (error) throw error;
 
-      toast({
-        title: "Camera Registered!",
-        description: "You are now connected to the event. Start streaming when ready.",
-      });
+      toastService.event.cameraConnected(deviceLabel.trim());
 
       // Navigate to camera streaming page
-      navigate(`/camera/${data.cameraId}`, { 
+      navigate(`/camera/${data.cameraId}`, {
         state: { 
           streamKey: data.streamKey,
           ingestUrl: data.ingestUrl,
@@ -157,12 +142,9 @@ const JoinAsCamera = () => {
       });
     } catch (error) {
       console.error('Error registering camera:', error);
-      toast({
-        title: "Error",
+      toastService.error({
         description: "Failed to register camera. Please try again.",
-        variant: "destructive"
       });
-    } finally {
       setLoading(false);
     }
   };
