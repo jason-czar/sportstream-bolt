@@ -228,7 +228,7 @@ const CreateEvent = () => {
                       'Events will use direct RTMP streaming for professional quality video transmission to YouTube and Twitch.'
                     }
                     {formData.streamingType === 'telegram' && 
-                      'Events will leverage Telegram\'s infrastructure for streaming capabilities with integrated social features.'
+                      'Events will leverage Telegram\'s social features while simultaneously streaming to YouTube and Twitch for maximum reach and engagement.'
                     }
                     {!formData.streamingType && 
                       'Select a streaming type above to see details about your streaming setup.'

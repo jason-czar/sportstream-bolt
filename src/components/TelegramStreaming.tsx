@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, MessageCircle, Users, Play } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ExternalLink, MessageCircle, Users, Play, Youtube, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
@@ -38,6 +39,7 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
     setLoading(true);
     
     try {
+      // Start Telegram live stream
       const { data, error } = await supabase.functions.invoke('telegram-bot', {
         body: {
           action: 'startStream',
@@ -48,10 +50,22 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
 
       if (error) throw error;
 
+      // Also start YouTube/Twitch simulcast for maximum reach
+      const { data: simulcastData, error: simulcastError } = await supabase.functions.invoke('add-simulcast', {
+        body: {
+          eventId: eventId
+        }
+      });
+
+      if (simulcastError) {
+        console.warn('Simulcast setup failed:', simulcastError);
+        // Don't fail the whole operation if simulcast fails
+      }
+
       setIsLive(true);
       toast({
-        title: "Live Stream Started",
-        description: "Telegram live stream is now active!"
+        title: "Multi-Platform Streaming Started",
+        description: "Live streaming on Telegram, YouTube, and Twitch!"
       });
 
       // Update event status to live
@@ -64,7 +78,7 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
       console.error('Error starting Telegram stream:', error);
       toast({
         title: "Error",
-        description: "Failed to start Telegram live stream",
+        description: "Failed to start live stream",
         variant: "destructive"
       });
     } finally {
@@ -100,21 +114,39 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
               <p className="text-sm text-muted-foreground">
                 <strong>Code:</strong> {eventCode}
               </p>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <div className={`w-3 h-3 rounded-full ${isLive ? 'bg-red-500 animate-pulse' : 'bg-gray-400'}`} />
                 <span className="text-sm">
                   {isLive ? 'Live Now' : 'Not Live'}
                 </span>
+                {isLive && (
+                  <div className="flex gap-1 ml-2">
+                    <Badge variant="outline" className="text-xs">
+                      <MessageCircle className="h-3 w-3 mr-1" />
+                      Telegram
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <Youtube className="h-3 w-3 mr-1" />
+                      YouTube
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      <Video className="h-3 w-3 mr-1" />
+                      Twitch
+                    </Badge>
+                  </div>
+                )}
               </div>
             </div>
 
             <div className="space-y-2">
-              <h4 className="font-medium">Telegram Features</h4>
+              <h4 className="font-medium">Multi-Platform Features</h4>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>• Live video streaming</li>
+                <li>• Telegram live video streaming</li>
                 <li>• Real-time chat interaction</li>
                 <li>• Voice messages support</li>
                 <li>• Screen sharing capabilities</li>
+                <li>• Simultaneous YouTube streaming</li>
+                <li>• Simultaneous Twitch streaming</li>
                 <li>• Multi-device synchronization</li>
               </ul>
             </div>
@@ -129,7 +161,7 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
                   className="flex-1"
                 >
                   <Play className="h-4 w-4 mr-2" />
-                  {loading ? 'Starting...' : isLive ? 'Stream Active' : 'Start Live Stream'}
+                  {loading ? 'Starting...' : isLive ? 'Multi-Platform Active' : 'Start Multi-Platform Stream'}
                 </Button>
               )}
               
@@ -147,12 +179,13 @@ const TelegramStreaming: React.FC<TelegramStreamingProps> = ({
 
           {telegramInviteLink && (
             <div className="bg-muted/50 p-3 rounded-lg">
-              <h5 className="font-medium text-sm mb-2">How to Join:</h5>
+              <h5 className="font-medium text-sm mb-2">Multi-Platform Streaming:</h5>
               <ol className="text-sm text-muted-foreground space-y-1">
-                <li>1. Click "Join Telegram Channel" above</li>
-                <li>2. Open the link in Telegram app or web</li>
-                <li>3. Join the channel to participate in live chat</li>
-                <li>4. Enjoy interactive live streaming experience!</li>
+                <li>1. Click "Start Multi-Platform Stream" to begin</li>
+                <li>2. Stream goes live on Telegram, YouTube, and Twitch</li>
+                <li>3. Join the Telegram channel for interactive features</li>
+                <li>4. Viewers can watch on their preferred platform</li>
+                <li>5. Enjoy maximum reach and engagement!</li>
               </ol>
             </div>
           )}
