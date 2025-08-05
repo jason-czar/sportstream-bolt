@@ -31,8 +31,8 @@ async function makeRequest(method: string, params: any = {}): Promise<TelegramRe
 async function createEventChannel(eventName: string, eventCode: string): Promise<any> {
   console.log('Creating Telegram channel for:', eventName, eventCode);
   
-  // Use your actual channel @channelAIapp for all events
-  const channelUsername = 'channelAIapp';
+  // Use your actual channel @sportstreamx for all events
+  const channelUsername = 'sportstreamx';
   const channelId = `@${channelUsername}`;
   
   // Verify the bot has access to the channel
