@@ -12,7 +12,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorMessage from "@/components/error/ErrorMessage";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
-import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings, Eye } from "lucide-react";
+import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings, Eye, Youtube, Twitch, ExternalLink } from "lucide-react";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import CameraCard from "@/components/CameraCard";
@@ -241,6 +241,66 @@ const DirectorDashboard = () => {
             <CardContent>
               <div className="bg-muted p-3 rounded-md font-mono text-sm break-all">
                 {event.program_url}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Live Stream URLs */}
+        {streaming && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Live Stream URLs
+              </CardTitle>
+              <CardDescription>
+                Share these URLs with your audience to watch the live stream
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* YouTube Live URL */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Youtube className="h-5 w-5 text-red-600" />
+                  <div>
+                    <p className="font-medium">YouTube Live</p>
+                    <p className="text-sm text-muted-foreground">Watch on @jason_czar</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open('https://www.youtube.com/@jason_czar/live', '_blank')}
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Live
+                </Button>
+              </div>
+
+              {/* Twitch Live URL - You'll need to replace with your actual Twitch username */}
+              <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-3">
+                  <Twitch className="h-5 w-5 text-purple-600" />
+                  <div>
+                    <p className="font-medium">Twitch Live</p>
+                    <p className="text-sm text-muted-foreground">Watch on Twitch</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open('https://www.twitch.tv/your_twitch_username', '_blank')}
+                  className="flex items-center gap-2"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  View Live
+                </Button>
+              </div>
+
+              <div className="text-sm text-muted-foreground">
+                <p>💡 These URLs will be active only when the stream is live. Share them with your audience!</p>
               </div>
             </CardContent>
           </Card>
