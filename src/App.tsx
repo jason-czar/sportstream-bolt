@@ -58,7 +58,7 @@ const App = () => {
                 path="/director/:eventId" 
                 element={
                   <ErrorBoundary>
-                    <ProtectedRoute requiredRoles={['admin', 'event_creator', 'director']}>
+                    <ProtectedRoute>
                       <DirectorDashboard />
                     </ProtectedRoute>
                   </ErrorBoundary>
