@@ -35,10 +35,13 @@ const AppHeader = () => {
                   <Link to="/join-camera" className="text-foreground hover:text-primary">Join as Camera</Link>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
+                  <Link 
+                    to="/profile" 
+                    className="flex items-center space-x-2 hover:text-primary transition-colors"
+                  >
                     <User className="h-4 w-4" />
                     <span className="text-sm">{profile?.full_name || user.email}</span>
-                  </div>
+                  </Link>
                   <Button
                     variant="outline"
                     size="sm"

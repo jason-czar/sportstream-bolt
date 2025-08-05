@@ -16,6 +16,7 @@ import JoinAsCamera from "./pages/JoinAsCamera";
 import CameraStream from "./pages/CameraStream";
 import DirectorDashboard from "./pages/DirectorDashboard";
 import ViewerPage from "./pages/ViewerPage";
+import UserProfile from "./pages/UserProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -79,6 +80,16 @@ const App = () => {
                   <ErrorBoundary>
                     <ProtectedRoute>
                       <CameraStream />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/profile" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <UserProfile />
                     </ProtectedRoute>
                   </ErrorBoundary>
                 } 
