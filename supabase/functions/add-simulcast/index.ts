@@ -12,7 +12,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Add simulcast function called');
     const { eventId } = await req.json();
+    console.log('Event ID received:', eventId);
 
     // Create Supabase client
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');

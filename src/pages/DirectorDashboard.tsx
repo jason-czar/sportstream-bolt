@@ -95,11 +95,18 @@ const DirectorDashboard = () => {
   const startStream = useCallback(async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.functions.invoke('start-stream', {
+      console.log('Starting stream for event:', eventId);
+      
+      const { data, error } = await supabase.functions.invoke('start-stream', {
         body: { eventId }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Start stream function error:', error);
+        throw error;
+      }
+
+      console.log('Start stream response:', data);
 
       await supabase
         .from('events')
@@ -110,7 +117,8 @@ const DirectorDashboard = () => {
     } catch (error) {
       console.error('Error starting stream:', error);
       toastService.error({
-        description: "Failed to start stream. Please try again.",
+        title: "Stream Start Failed",
+        description: error.message || "Failed to start stream. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -145,17 +153,24 @@ const DirectorDashboard = () => {
   const addSimulcastTargets = useCallback(async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.functions.invoke('add-simulcast', {
+      console.log('Adding simulcast targets for event:', eventId);
+      
+      const { data, error } = await supabase.functions.invoke('add-simulcast', {
         body: { eventId }
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Add simulcast function error:', error);
+        throw error;
+      }
 
+      console.log('Add simulcast response:', data);
       toastService.event.simulcastConfigured();
     } catch (error) {
       console.error('Error adding simulcast:', error);
       toastService.error({
-        description: "Failed to configure simulcast targets. Please try again.",
+        title: "Simulcast Setup Failed",
+        description: error.message || "Failed to configure simulcast targets. Please try again.",
       });
     } finally {
       setLoading(false);
