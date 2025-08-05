@@ -70,6 +70,7 @@ export type Database = {
           sport: string
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
+          streaming_type: string | null
           updated_at: string
           viewer_count: number | null
         }
@@ -87,6 +88,7 @@ export type Database = {
           sport: string
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
+          streaming_type?: string | null
           updated_at?: string
           viewer_count?: number | null
         }
@@ -104,6 +106,7 @@ export type Database = {
           sport?: string
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
+          streaming_type?: string | null
           updated_at?: string
           viewer_count?: number | null
         }

@@ -38,7 +38,7 @@ serve(async (req) => {
       });
     }
 
-    const { name, sport, startTime, expectedDuration, eventCode } = await req.json();
+    const { name, sport, startTime, expectedDuration, eventCode, streamingType } = await req.json();
 
     // Streaming keys are now stored securely in environment variables
     // and retrieved by the add-simulcast function when needed
@@ -90,7 +90,8 @@ serve(async (req) => {
         mux_stream_id: muxData.data.id,
         program_url: muxData.data.playback_ids[0]?.url || null,
         status: 'scheduled',
-        owner_id: user.id
+        owner_id: user.id,
+        streaming_type: streamingType
       })
       .select()
       .single();
