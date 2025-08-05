@@ -12,6 +12,32 @@ serve(async (req) => {
   }
 
   try {
+    // Get user from request
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Create Supabase client first to validate auth
+    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { name, sport, startTime, expectedDuration, eventCode, youtubeKey, twitchKey } = await req.json();
 
     // Initialize Mux client
@@ -49,13 +75,6 @@ serve(async (req) => {
     const muxData = await muxResponse.json();
     console.log('Mux stream created:', muxData.data.id);
 
-    // Create Supabase client
-    const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
     // Insert event into database
     const { data: eventData, error: dbError } = await supabase
       .from('events')
@@ -69,7 +88,8 @@ serve(async (req) => {
         program_url: muxData.data.playback_ids[0]?.url || null,
         youtube_key: youtubeKey || null,
         twitch_key: twitchKey || null,
-        status: 'created'
+        status: 'scheduled',
+        owner_id: user.id
       })
       .select()
       .single();

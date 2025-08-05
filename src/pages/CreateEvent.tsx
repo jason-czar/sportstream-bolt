@@ -7,9 +7,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const CreateEvent = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     eventName: "",
@@ -25,11 +29,24 @@ const CreateEvent = () => {
     setLoading(true);
 
     try {
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please sign in to create an event.",
+          variant: "destructive"
+        });
+        navigate('/auth');
+        return;
+      }
+
       // Generate unique event code
       const eventCode = Math.random().toString(36).substring(2, 8).toUpperCase();
       
       // Call Supabase edge function to create event with Mux stream
       const { data, error } = await supabase.functions.invoke('create-event', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        },
         body: {
           name: formData.eventName,
           sport: formData.sportType,
@@ -157,9 +174,18 @@ const CreateEvent = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Creating Event..." : "Create Event"}
-              </Button>
+              <div className="flex gap-4">
+                <Button asChild variant="outline" className="flex-1">
+                  <Link to="/">
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to Home
+                  </Link>
+                </Button>
+                <Button type="submit" className="flex-1" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Create Event
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
