@@ -63,12 +63,16 @@ export type Database = {
           id: string
           mux_stream_id: string | null
           name: string
+          owner_id: string | null
           program_url: string | null
+          recording_enabled: boolean | null
+          recording_url: string | null
           sport: string
           start_time: string
-          status: string
+          status: Database["public"]["Enums"]["event_status"]
           twitch_key: string | null
           updated_at: string
+          viewer_count: number | null
           youtube_key: string | null
         }
         Insert: {
@@ -78,12 +82,16 @@ export type Database = {
           id?: string
           mux_stream_id?: string | null
           name: string
+          owner_id?: string | null
           program_url?: string | null
+          recording_enabled?: boolean | null
+          recording_url?: string | null
           sport: string
           start_time: string
-          status?: string
+          status?: Database["public"]["Enums"]["event_status"]
           twitch_key?: string | null
           updated_at?: string
+          viewer_count?: number | null
           youtube_key?: string | null
         }
         Update: {
@@ -93,13 +101,44 @@ export type Database = {
           id?: string
           mux_stream_id?: string | null
           name?: string
+          owner_id?: string | null
           program_url?: string | null
+          recording_enabled?: boolean | null
+          recording_url?: string | null
           sport?: string
           start_time?: string
-          status?: string
+          status?: Database["public"]["Enums"]["event_status"]
           twitch_key?: string | null
           updated_at?: string
+          viewer_count?: number | null
           youtube_key?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -139,15 +178,43 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "event_creator" | "director" | "viewer"
+      event_status: "scheduled" | "live" | "ended" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -274,6 +341,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "event_creator", "director", "viewer"],
+      event_status: ["scheduled", "live", "ended", "cancelled"],
+    },
   },
 } as const
