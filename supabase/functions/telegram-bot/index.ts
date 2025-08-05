@@ -29,38 +29,86 @@ async function makeRequest(method: string, params: any = {}): Promise<TelegramRe
 }
 
 async function createEventChannel(eventName: string, eventCode: string): Promise<any> {
-  // For demo purposes, create a mock Telegram channel response
-  // In a real implementation, this would use the actual Telegram Bot API
   console.log('Creating Telegram channel for:', eventName, eventCode);
   
-  // Mock channel data - in production this would come from actual Telegram API
-  const mockChannelData = {
-    channelId: `@sportscast_${eventCode.toLowerCase()}`,
-    channelUsername: `sportscast_${eventCode.toLowerCase()}`,
-    inviteLink: `https://t.me/sportscast_${eventCode.toLowerCase()}`
-  };
+  // Use your actual channel @channelAIapp for all events
+  const channelUsername = 'channelAIapp';
+  const channelId = `@${channelUsername}`;
   
-  console.log('Mock Telegram channel created:', mockChannelData);
-  return mockChannelData;
+  // Verify the bot has access to the channel
+  try {
+    const chatInfo = await makeRequest('getChat', {
+      chat_id: channelId
+    });
+    
+    if (!chatInfo.ok) {
+      throw new Error(`Failed to access channel ${channelId}: ${chatInfo.description}`);
+    }
+    
+    console.log('Successfully verified access to channel:', channelId);
+    
+    const channelData = {
+      channelId: channelId,
+      channelUsername: channelUsername,
+      inviteLink: `https://t.me/${channelUsername}`
+    };
+    
+    console.log('Telegram channel configured:', channelData);
+    return channelData;
+  } catch (error) {
+    console.error('Error accessing Telegram channel:', error);
+    throw new Error(`Cannot access Telegram channel @${channelUsername}. Make sure the bot is added as admin to the channel.`);
+  }
 }
 
 async function startLiveStream(channelId: string, eventName: string): Promise<any> {
-  // Mock live stream start for demo purposes
-  console.log('Starting live stream for channel:', channelId, eventName);
+  console.log('Starting live stream announcement for channel:', channelId, eventName);
   
-  return {
-    success: true,
-    message: `Live stream started for ${eventName}`,
-    streamUrl: `https://t.me/${channelId.replace('@', '')}`
-  };
+  const message = `🔴 LIVE NOW: ${eventName}\n\nThe event is now streaming live! Join us now.`;
+  
+  try {
+    const response = await makeRequest('sendMessage', {
+      chat_id: channelId,
+      text: message,
+      parse_mode: 'HTML'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to send live stream message: ${response.description}`);
+    }
+    
+    return {
+      success: true,
+      message: `Live stream announcement sent for ${eventName}`,
+      streamUrl: `https://t.me/${channelId.replace('@', '')}`
+    };
+  } catch (error) {
+    console.error('Error starting live stream announcement:', error);
+    throw error;
+  }
 }
 
 async function sendEventNotification(channelId: string, eventName: string, eventCode: string): Promise<void> {
-  // Mock notification sending for demo purposes
   console.log('Sending notification to channel:', channelId, eventName, eventCode);
   
-  // In a real implementation, this would send an actual Telegram message
-  console.log(`Notification sent: 🎬 ${eventName} is about to start! Event Code: ${eventCode}`);
+  const message = `🎬 <b>${eventName}</b> is about to start!\n\n📋 Event Code: <code>${eventCode}</code>\n\nGet ready for the live stream!`;
+  
+  try {
+    const response = await makeRequest('sendMessage', {
+      chat_id: channelId,
+      text: message,
+      parse_mode: 'HTML'
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Failed to send notification: ${response.description}`);
+    }
+    
+    console.log(`Notification sent successfully: ${eventName} (${eventCode})`);
+  } catch (error) {
+    console.error('Error sending notification:', error);
+    throw error;
+  }
 }
 
 serve(async (req) => {
@@ -101,13 +149,16 @@ serve(async (req) => {
         break;
         
       case 'getBotInfo':
-        // Mock bot info for demo
-        result = { 
-          id: 'demo_bot', 
-          username: 'sportscast_bot', 
-          first_name: 'Sportscast Bot',
-          is_bot: true 
-        };
+        try {
+          const botInfo = await makeRequest('getMe');
+          if (!botInfo.ok) {
+            throw new Error(`Failed to get bot info: ${botInfo.description}`);
+          }
+          result = botInfo.result;
+        } catch (error) {
+          console.error('Error getting bot info:', error);
+          throw error;
+        }
         break;
         
       default:
