@@ -40,6 +40,41 @@ serve(async (req) => {
 
     const { name, sport, startTime, expectedDuration, eventCode, streamingType } = await req.json();
 
+    console.log('Creating event:', { name, sport, startTime, expectedDuration, eventCode, streamingType });
+
+    if (!name || !sport || !startTime || !expectedDuration || !eventCode || !streamingType) {
+      throw new Error('Missing required fields: name, sport, startTime, expectedDuration, eventCode, and streamingType are required');
+    }
+
+    let telegramChannelData = null;
+
+    // Handle Telegram integration if selected
+    if (streamingType === 'telegram') {
+      console.log('Setting up Telegram channel for event...');
+      
+      const telegramResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-bot`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'createChannel',
+          eventName: name,
+          eventCode
+        })
+      });
+
+      if (!telegramResponse.ok) {
+        const error = await telegramResponse.text();
+        console.error('Telegram channel creation failed:', error);
+        throw new Error('Failed to create Telegram channel for event');
+      }
+
+      const telegramResult = await telegramResponse.json();
+      telegramChannelData = telegramResult.data;
+      console.log('Telegram channel created:', telegramChannelData);
+    }
+
     // Streaming keys are now stored securely in environment variables
     // and retrieved by the add-simulcast function when needed
 
@@ -88,10 +123,14 @@ serve(async (req) => {
         expected_duration: expectedDuration,
         event_code: eventCode,
         mux_stream_id: muxData.data.id,
-        program_url: muxData.data.playback_ids[0]?.url || null,
+        program_url: streamingType === 'telegram' && telegramChannelData
+          ? `https://t.me/${telegramChannelData.channelUsername}`
+          : muxData.data.playback_ids[0]?.url || null,
         status: 'scheduled',
         owner_id: user.id,
-        streaming_type: streamingType
+        streaming_type: streamingType,
+        telegram_channel_id: telegramChannelData?.channelId || null,
+        telegram_invite_link: telegramChannelData?.inviteLink || null
       })
       .select()
       .single();
@@ -103,13 +142,35 @@ serve(async (req) => {
 
     console.log('Event created successfully:', eventData.id);
 
+    // Send welcome notification to Telegram channel if applicable
+    if (streamingType === 'telegram' && telegramChannelData) {
+      try {
+        await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-bot`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'sendNotification',
+            channelId: telegramChannelData.channelId,
+            eventName: name,
+            eventCode
+          })
+        });
+      } catch (error) {
+        console.error('Failed to send Telegram notification:', error);
+        // Don't fail the event creation if notification fails
+      }
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
         eventId: eventData.id,
         eventCode,
         streamId: muxData.data.id,
-        programUrl: muxData.data.playback_ids[0]?.url
+        programUrl: eventData.program_url,
+        telegramChannel: telegramChannelData
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
