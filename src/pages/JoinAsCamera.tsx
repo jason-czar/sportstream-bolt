@@ -7,12 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { supabase } from "@/integrations/supabase/client";
+import ErrorMessage from "@/components/error/ErrorMessage";
 import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
 
 const JoinAsCamera = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { handleAsyncError } = useErrorHandler();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [eventCode, setEventCode] = useState("");
   const [deviceLabel, setDeviceLabel] = useState("");
@@ -20,6 +23,7 @@ const JoinAsCamera = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
+  const [cameraError, setCameraError] = useState<string | null>(null);
 
   useEffect(() => {
     startVideoPreview();
@@ -31,7 +35,9 @@ const JoinAsCamera = () => {
   }, []);
 
   const startVideoPreview = async () => {
-    try {
+    setCameraError(null);
+    
+    const { error } = await handleAsyncError(async () => {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           width: { ideal: 1920 },
@@ -45,13 +51,14 @@ const JoinAsCamera = () => {
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
       }
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      toast({
-        title: "Camera Access Error",
-        description: "Please allow camera and microphone access to continue.",
-        variant: "destructive"
-      });
+    }, {
+      title: "Camera Access Error",
+      fallbackMessage: "Please allow camera and microphone access to continue.",
+      showToast: true
+    });
+
+    if (error) {
+      setCameraError("Camera access denied. Please enable permissions and try again.");
     }
   };
 
@@ -178,20 +185,31 @@ const JoinAsCamera = () => {
               {/* Camera Preview */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold">Camera Preview</h3>
-                <div className="relative bg-muted rounded-lg aspect-video overflow-hidden">
-                  <video
-                    ref={videoRef}
-                    autoPlay
-                    muted
-                    playsInline
-                    className="w-full h-full object-cover"
+                
+                {cameraError ? (
+                  <ErrorMessage
+                    title="Camera Error"
+                    message={cameraError}
+                    onRetry={startVideoPreview}
+                    variant="warning"
                   />
-                  {!stream && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <VideoOff className="h-12 w-12 text-muted-foreground" />
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <div className="relative bg-muted rounded-lg aspect-video overflow-hidden">
+                    <video
+                      ref={videoRef}
+                      autoPlay
+                      muted
+                      playsInline
+                      className="w-full h-full object-cover"
+                    />
+                    {!stream && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <VideoOff className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
+                )}
+                
                 <Button 
                   onClick={startVideoPreview} 
                   variant="outline" 

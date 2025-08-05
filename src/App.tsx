@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import ErrorBoundary from "@/components/error/ErrorBoundary";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
@@ -18,43 +19,58 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route 
-              path="/create-event" 
-              element={
-                <ProtectedRoute>
-                  <CreateEvent />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/join-camera" 
-              element={
-                <ProtectedRoute>
-                  <JoinAsCamera />
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/director/:eventId" 
-              element={
-                <ProtectedRoute requiredRoles={['admin', 'event_creator', 'director']}>
-                  <DirectorDashboard />
-                </ProtectedRoute>
-              } 
-            />
-            <Route path="/watch/:eventId" element={<ViewerPage />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
+      <ErrorBoundary>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route 
+                path="/create-event" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <CreateEvent />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/join-camera" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <JoinAsCamera />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/director/:eventId" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute requiredRoles={['admin', 'event_creator', 'director']}>
+                      <DirectorDashboard />
+                    </ProtectedRoute>
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/watch/:eventId" 
+                element={
+                  <ErrorBoundary>
+                    <ViewerPage />
+                  </ErrorBoundary>
+                } 
+              />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
 );

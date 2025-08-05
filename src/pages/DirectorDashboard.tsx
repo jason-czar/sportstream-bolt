@@ -4,7 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { supabase } from "@/integrations/supabase/client";
+import ErrorMessage from "@/components/error/ErrorMessage";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings } from "lucide-react";
 
 interface Camera {
@@ -28,10 +31,12 @@ interface EventData {
 
 const DirectorDashboard = () => {
   const { eventId } = useParams();
+  const { handleAsyncError } = useErrorHandler();
   const [event, setEvent] = useState<EventData | null>(null);
   const [cameras, setCameras] = useState<Camera[]>([]);
   const [loading, setLoading] = useState(true);
   const [streaming, setStreaming] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (eventId) {
@@ -42,7 +47,9 @@ const DirectorDashboard = () => {
   }, [eventId]);
 
   const loadEventData = async () => {
-    try {
+    setError(null);
+    
+    const { data, error } = await handleAsyncError(async () => {
       const { data, error } = await supabase
         .from('events')
         .select('*')
@@ -52,13 +59,14 @@ const DirectorDashboard = () => {
       if (error) throw error;
       setEvent(data);
       setStreaming(data.status === 'live');
-    } catch (error) {
-      console.error('Error loading event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load event data.",
-        variant: "destructive"
-      });
+      return data;
+    }, {
+      title: "Failed to load event",
+      showToast: false
+    });
+
+    if (error) {
+      setError("Failed to load event data. Please refresh the page and try again.");
     }
   };
 
@@ -227,9 +235,18 @@ const DirectorDashboard = () => {
   };
 
   if (loading && !event) {
+    return <LoadingSpinner fullScreen text="Loading director dashboard..." />;
+  }
+
+  if (error && !event) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">Loading director dashboard...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <ErrorMessage
+          title="Unable to load director dashboard"
+          message={error}
+          onRetry={loadEventData}
+          className="max-w-md"
+        />
       </div>
     );
   }

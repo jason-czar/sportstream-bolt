@@ -8,12 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CreateEvent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { handleAsyncError } = useErrorHandler();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     eventName: "",
@@ -28,7 +30,7 @@ const CreateEvent = () => {
     e.preventDefault();
     setLoading(true);
 
-    try {
+    const { data, error } = await handleAsyncError(async () => {
       if (!session) {
         toast({
           title: "Authentication required",
@@ -36,7 +38,21 @@ const CreateEvent = () => {
           variant: "destructive"
         });
         navigate('/auth');
-        return;
+        throw new Error('Authentication required');
+      }
+
+      // Validate required fields
+      if (!formData.eventName.trim()) {
+        throw new Error('Event name is required');
+      }
+      if (!formData.sportType) {
+        throw new Error('Sport type is required');
+      }
+      if (!formData.dateTime) {
+        throw new Error('Start date and time is required');
+      }
+      if (!formData.expectedDuration || parseInt(formData.expectedDuration) < 1) {
+        throw new Error('Expected duration must be at least 1 minute');
       }
 
       // Generate unique event code
@@ -48,13 +64,13 @@ const CreateEvent = () => {
           Authorization: `Bearer ${session.access_token}`
         },
         body: {
-          name: formData.eventName,
+          name: formData.eventName.trim(),
           sport: formData.sportType,
           startTime: formData.dateTime,
           expectedDuration: parseInt(formData.expectedDuration),
           eventCode,
-          youtubeKey: formData.youtubeKey,
-          twitchKey: formData.twitchKey
+          youtubeKey: formData.youtubeKey.trim(),
+          twitchKey: formData.twitchKey.trim()
         }
       });
 
@@ -65,17 +81,17 @@ const CreateEvent = () => {
         description: `Event code: ${eventCode}. Share this with camera operators.`,
       });
 
+      return { eventId: data.eventId, eventCode };
+    }, {
+      title: "Failed to create event",
+      fallbackMessage: "Unable to create event. Please check your input and try again."
+    });
+
+    if (data?.eventId) {
       navigate(`/director/${data.eventId}`);
-    } catch (error) {
-      console.error('Error creating event:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create event. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   return (
