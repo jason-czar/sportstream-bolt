@@ -291,7 +291,7 @@ const DirectorDashboard = () => {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open('https://www.twitch.tv/your_twitch_username', '_blank')}
+                  onClick={() => window.open('https://www.twitch.tv/jason_czar', '_blank')}
                   className="flex items-center gap-2"
                 >
                   <ExternalLink className="h-4 w-4" />
