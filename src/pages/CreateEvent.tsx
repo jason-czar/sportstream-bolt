@@ -66,14 +66,6 @@ const CreateEvent = () => {
       if (!formData.dateTime) {
         throw new Error('Start date and time is required');
       }
-      
-      // Validate that the start time is in the future
-      const startTime = new Date(formData.dateTime);
-      const now = new Date();
-      if (startTime <= now) {
-        throw new Error('Start time must be in the future');
-      }
-      
       if (!formData.expectedDuration || parseInt(formData.expectedDuration) < 1) {
         throw new Error('Expected duration must be at least 1 minute');
       }
