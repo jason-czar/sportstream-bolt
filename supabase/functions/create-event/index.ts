@@ -21,15 +21,15 @@ serve(async (req) => {
       });
     }
 
-    // Create Supabase client with anon key for auth validation
+    // Create Supabase client first to validate auth
     const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-    const authSupabase = createClient(
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await authSupabase.auth.getUser(token);
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     
     if (authError || !user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
@@ -78,12 +78,6 @@ serve(async (req) => {
 
     const muxData = await muxResponse.json();
     console.log('Mux stream created:', muxData.data.id);
-
-    // Create service role client for database operations
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
 
     // Insert event into database
     const { data: eventData, error: dbError } = await supabase
