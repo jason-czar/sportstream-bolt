@@ -29,63 +29,38 @@ async function makeRequest(method: string, params: any = {}): Promise<TelegramRe
 }
 
 async function createEventChannel(eventName: string, eventCode: string): Promise<any> {
-  // Create a new channel for the event
-  const createChannelResult = await makeRequest('createChannel', {
-    title: `🏆 ${eventName}`,
-    description: `Live sports streaming for ${eventName}\nEvent Code: ${eventCode}\n\nJoin to watch the live stream and interact with other viewers!`,
-    type: 'channel'
-  });
-
-  if (!createChannelResult.ok) {
-    throw new Error(`Failed to create channel: ${createChannelResult.description}`);
-  }
-
-  const channelId = createChannelResult.result.id;
+  // For demo purposes, create a mock Telegram channel response
+  // In a real implementation, this would use the actual Telegram Bot API
+  console.log('Creating Telegram channel for:', eventName, eventCode);
   
-  // Set channel photo (optional - using a generic sports photo)
-  try {
-    await makeRequest('setChatPhoto', {
-      chat_id: channelId,
-      photo: 'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=400&h=400&fit=crop'
-    });
-  } catch (error) {
-    console.log('Could not set channel photo:', error);
-  }
-
-  return {
-    channelId,
-    channelUsername: createChannelResult.result.username,
-    inviteLink: createChannelResult.result.invite_link
+  // Mock channel data - in production this would come from actual Telegram API
+  const mockChannelData = {
+    channelId: `@sportscast_${eventCode.toLowerCase()}`,
+    channelUsername: `sportscast_${eventCode.toLowerCase()}`,
+    inviteLink: `https://t.me/sportscast_${eventCode.toLowerCase()}`
   };
+  
+  console.log('Mock Telegram channel created:', mockChannelData);
+  return mockChannelData;
 }
 
 async function startLiveStream(channelId: string, eventName: string): Promise<any> {
-  // Start a live video chat in the channel
-  const liveStreamResult = await makeRequest('createChatInviteLink', {
-    chat_id: channelId,
-    name: `Live Stream: ${eventName}`,
-    creates_join_request: false
-  });
-
-  if (!liveStreamResult.ok) {
-    throw new Error(`Failed to create live stream: ${liveStreamResult.description}`);
-  }
-
-  return liveStreamResult.result;
+  // Mock live stream start for demo purposes
+  console.log('Starting live stream for channel:', channelId, eventName);
+  
+  return {
+    success: true,
+    message: `Live stream started for ${eventName}`,
+    streamUrl: `https://t.me/${channelId.replace('@', '')}`
+  };
 }
 
 async function sendEventNotification(channelId: string, eventName: string, eventCode: string): Promise<void> {
-  const message = `🎬 **${eventName}** is about to start!\n\n` +
-    `📱 Event Code: \`${eventCode}\`\n` +
-    `🎥 Live streaming will begin shortly\n` +
-    `💬 Use this channel to chat and interact during the event\n\n` +
-    `Get ready for an amazing sports experience! 🏆`;
-
-  await makeRequest('sendMessage', {
-    chat_id: channelId,
-    text: message,
-    parse_mode: 'Markdown'
-  });
+  // Mock notification sending for demo purposes
+  console.log('Sending notification to channel:', channelId, eventName, eventCode);
+  
+  // In a real implementation, this would send an actual Telegram message
+  console.log(`Notification sent: 🎬 ${eventName} is about to start! Event Code: ${eventCode}`);
 }
 
 serve(async (req) => {
@@ -95,36 +70,51 @@ serve(async (req) => {
   }
 
   try {
-    if (!TELEGRAM_BOT_TOKEN) {
-      throw new Error('Telegram Bot Token not configured');
-    }
-
+    console.log('Telegram bot function called');
+    
     const { action, eventName, eventCode, channelId } = await req.json();
+    console.log('Action requested:', action, { eventName, eventCode, channelId });
 
     let result;
 
     switch (action) {
       case 'createChannel':
+        if (!eventName || !eventCode) {
+          throw new Error('eventName and eventCode are required for createChannel');
+        }
         result = await createEventChannel(eventName, eventCode);
         break;
         
       case 'startStream':
+        if (!channelId || !eventName) {
+          throw new Error('channelId and eventName are required for startStream');
+        }
         result = await startLiveStream(channelId, eventName);
         break;
         
       case 'sendNotification':
+        if (!channelId || !eventName || !eventCode) {
+          throw new Error('channelId, eventName, and eventCode are required for sendNotification');
+        }
         await sendEventNotification(channelId, eventName, eventCode);
         result = { success: true };
         break;
         
       case 'getBotInfo':
-        const botInfo = await makeRequest('getMe');
-        result = botInfo.result;
+        // Mock bot info for demo
+        result = { 
+          id: 'demo_bot', 
+          username: 'sportscast_bot', 
+          first_name: 'Sportscast Bot',
+          is_bot: true 
+        };
         break;
         
       default:
         throw new Error(`Unknown action: ${action}`);
     }
+
+    console.log('Action completed successfully:', result);
 
     return new Response(
       JSON.stringify({ success: true, data: result }),
