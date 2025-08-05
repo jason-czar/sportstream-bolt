@@ -85,6 +85,28 @@ const JoinAsCamera = () => {
     }
   };
 
+  const generateDeviceLabel = async (eventId: string) => {
+    try {
+      // Get count of existing cameras for this event
+      const { count, error } = await supabase
+        .from('cameras')
+        .select('*', { count: 'exact', head: true })
+        .eq('event_id', eventId);
+
+      if (error) {
+        console.error('Error counting cameras:', error);
+        return "Camera 1"; // Default fallback
+      }
+
+      // Generate next camera number
+      const nextCameraNumber = (count || 0) + 1;
+      return `Camera ${nextCameraNumber}`;
+    } catch (error) {
+      console.error('Error generating device label:', error);
+      return "Camera 1"; // Default fallback
+    }
+  };
+
   const validateEventCode = async () => {
     if (!isOnline) {
       toastService.error({
@@ -120,6 +142,11 @@ const JoinAsCamera = () => {
       }
 
       setEventData(data);
+      
+      // Auto-generate device label
+      const generatedLabel = await generateDeviceLabel(data.id);
+      setDeviceLabel(generatedLabel);
+      
       toastService.success({
         title: "Event found!",
         description: `Ready to join: ${data.name}`,
