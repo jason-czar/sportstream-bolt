@@ -8,6 +8,7 @@ import { Separator } from '@/components/ui/separator';
 import { Camera, Mic, MicOff, Video, VideoOff, Settings, LogOut, SwitchCamera, Copy } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useRTMPStreaming } from '@/hooks/useRTMPStreaming';
 import { toastService } from '@/lib/toast-service';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -27,10 +28,11 @@ const CameraStream: React.FC = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
-  const [isStreaming, setIsStreaming] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const isMobile = useIsMobile();
+
+  const rtmpStreaming = useRTMPStreaming();
 
   const state = location.state as LocationState;
 
@@ -43,7 +45,21 @@ const CameraStream: React.FC = () => {
       return;
     }
 
-    startVideoPreview();
+    const initializeCamera = async () => {
+      await startVideoPreview();
+      
+      // Initialize RTMP streaming
+      await rtmpStreaming.initializeStreaming({
+        rtmpUrl: state.ingestUrl,
+        streamKey: state.streamKey,
+        cameraFacing: facingMode === 'environment' ? 'back' : 'front',
+        videoBitrate: 2500000, // 2.5 Mbps
+        audioBitrate: 128000   // 128 kbps
+      });
+    };
+
+    initializeCamera();
+
     return () => {
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -85,6 +101,7 @@ const CameraStream: React.FC = () => {
     const newFacingMode = facingMode === 'environment' ? 'user' : 'environment';
     setFacingMode(newFacingMode);
     await startVideoPreview(newFacingMode);
+    await rtmpStreaming.switchCamera();
     toastService.success({
       description: `Switched to ${newFacingMode === 'environment' ? 'back' : 'front'} camera`,
     });
@@ -103,30 +120,36 @@ const CameraStream: React.FC = () => {
     }
   };
 
-  const toggleVideo = () => {
+  const toggleVideo = async () => {
+    const newVideoState = !isVideoEnabled;
     if (stream) {
       const videoTrack = stream.getVideoTracks()[0];
       if (videoTrack) {
-        videoTrack.enabled = !isVideoEnabled;
-        setIsVideoEnabled(!isVideoEnabled);
+        videoTrack.enabled = newVideoState;
+        setIsVideoEnabled(newVideoState);
       }
     }
+    await rtmpStreaming.toggleVideo(newVideoState);
   };
 
-  const toggleAudio = () => {
+  const toggleAudio = async () => {
+    const newAudioState = !isAudioEnabled;
     if (stream) {
       const audioTrack = stream.getAudioTracks()[0];
       if (audioTrack) {
-        audioTrack.enabled = !isAudioEnabled;
-        setIsAudioEnabled(!isAudioEnabled);
+        audioTrack.enabled = newAudioState;
+        setIsAudioEnabled(newAudioState);
       }
     }
+    await rtmpStreaming.toggleAudio(newAudioState);
   };
 
   const startStreaming = async () => {
     try {
       console.log('Starting camera stream for camera ID:', cameraId);
-      setIsStreaming(true);
+      
+      // Start RTMP streaming
+      await rtmpStreaming.startStreaming();
       
       // Update camera status in database to live
       const { error } = await supabase
@@ -139,18 +162,20 @@ const CameraStream: React.FC = () => {
       }
 
       console.log('Camera marked as live in database');
-      console.log('RTMP streaming would start here with:', {
+      console.log('RTMP streaming started with:', {
         streamKey: state.streamKey,
         ingestUrl: state.ingestUrl,
-        cameraId: cameraId
+        cameraId: cameraId,
+        isNative: rtmpStreaming.isNative
       });
 
       toastService.success({
-        description: "Camera stream started successfully!",
+        description: rtmpStreaming.isNative 
+          ? "RTMP stream started successfully!" 
+          : "Camera preview started (RTMP requires mobile app)",
       });
     } catch (error) {
       console.error('Error starting camera stream:', error);
-      setIsStreaming(false);
       toastService.error({
         description: "Failed to start camera stream. Please try again.",
       });
@@ -160,7 +185,9 @@ const CameraStream: React.FC = () => {
   const stopStreaming = async () => {
     try {
       console.log('Stopping camera stream for camera ID:', cameraId);
-      setIsStreaming(false);
+      
+      // Stop RTMP streaming
+      await rtmpStreaming.stopStreaming();
       
       // Update camera status in database to not live
       const { error } = await supabase
@@ -205,8 +232,8 @@ const CameraStream: React.FC = () => {
           <div className="flex items-center gap-2">
             <Camera className="h-5 w-5" />
             <span className="font-semibold">Camera Operator</span>
-            <Badge variant={isStreaming ? "default" : "secondary"} className="text-xs">
-              {isStreaming ? "Live" : "Standby"}
+            <Badge variant={rtmpStreaming.isStreaming ? "default" : "secondary"} className="text-xs">
+              {rtmpStreaming.isStreaming ? "Live" : "Standby"}
             </Badge>
           </div>
           <div className="flex items-center gap-2">
@@ -345,14 +372,36 @@ const CameraStream: React.FC = () => {
               </SheetContent>
             </Sheet>
 
-            {!isStreaming ? (
-              <Button size={isMobile ? "default" : "lg"} onClick={startStreaming} className="px-6">
+            {!rtmpStreaming.isStreaming ? (
+              <Button 
+                size={isMobile ? "default" : "lg"} 
+                onClick={startStreaming} 
+                className="px-6"
+                disabled={!rtmpStreaming.isInitialized}
+              >
                 Start Streaming
               </Button>
             ) : (
-              <Button size={isMobile ? "default" : "lg"} variant="destructive" onClick={stopStreaming} className="px-6">
+              <Button 
+                size={isMobile ? "default" : "lg"} 
+                variant="destructive" 
+                onClick={stopStreaming} 
+                className="px-6"
+              >
                 Stop Streaming
               </Button>
+            )}
+            
+            {rtmpStreaming.error && (
+              <div className="text-sm text-destructive text-center mt-2">
+                {rtmpStreaming.error}
+              </div>
+            )}
+            
+            {!rtmpStreaming.isNative && (
+              <div className="text-xs text-muted-foreground text-center mt-1">
+                For real RTMP streaming, use the mobile app
+              </div>
             )}
           </div>
         </div>
