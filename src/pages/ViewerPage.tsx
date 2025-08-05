@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { Play, Users, Wifi } from "lucide-react";
 import Hls from "hls.js";
+import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
+import LoadingSpinner from "@/components/ui/LoadingSpinner";
 
 interface EventData {
   id: string;
@@ -126,8 +128,43 @@ const ViewerPage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">Loading event...</div>
+      <div className="min-h-screen bg-background">
+        {/* Header Skeleton */}
+        <div className="aspect-video bg-muted animate-pulse" />
+        
+        <div className="container mx-auto px-4 py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <LoadingSkeleton variant="text" className="h-6 w-3/4" />
+                  <LoadingSkeleton variant="text" className="h-4 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <LoadingSkeleton variant="text" lines={3} />
+                </CardContent>
+              </Card>
+            </div>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader>
+                  <LoadingSkeleton variant="text" className="h-5 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <LoadingSkeleton variant="card" />
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <LoadingSkeleton variant="text" className="h-5 w-1/2" />
+                </CardHeader>
+                <CardContent>
+                  <LoadingSkeleton variant="text" lines={4} />
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }

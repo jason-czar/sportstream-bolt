@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Camera, Video, VideoOff } from "lucide-react";
+import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
 
 const JoinAsCamera = () => {
   const navigate = useNavigate();
+  const { session } = useAuth();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [eventCode, setEventCode] = useState("");
   const [deviceLabel, setDeviceLabel] = useState("");
@@ -63,6 +65,16 @@ const JoinAsCamera = () => {
       return;
     }
 
+    if (!session) {
+      toast({
+        title: "Authentication required",
+        description: "Please sign in to join as a camera operator.",
+        variant: "destructive"
+      });
+      navigate('/auth');
+      return;
+    }
+
     setLoading(true);
     try {
       const { data, error } = await supabase
@@ -111,6 +123,9 @@ const JoinAsCamera = () => {
     try {
       // Register camera with backend
       const { data, error } = await supabase.functions.invoke('register-camera', {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        },
         body: {
           eventId: eventData.id,
           deviceLabel: deviceLabel.trim(),
