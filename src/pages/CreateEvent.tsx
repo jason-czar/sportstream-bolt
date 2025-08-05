@@ -162,13 +162,28 @@ const CreateEvent = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="dateTime">Start Date & Time</Label>
-                  <Input
-                    id="dateTime"
-                    type="datetime-local"
-                    value={formData.dateTime}
-                    onChange={(e) => setFormData({...formData, dateTime: e.target.value})}
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="dateTime"
+                      type="datetime-local"
+                      value={formData.dateTime}
+                      onChange={(e) => setFormData({...formData, dateTime: e.target.value})}
+                      required
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const now = new Date();
+                        const currentDateTime = now.toISOString().slice(0, 16);
+                        setFormData({...formData, dateTime: currentDateTime});
+                      }}
+                    >
+                      Now
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
