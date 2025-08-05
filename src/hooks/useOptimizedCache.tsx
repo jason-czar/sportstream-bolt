@@ -123,23 +123,21 @@ export function useOptimizedCache<T>(config: CacheConfig = {}) {
 
   const set = useCallback((key: string, data: T, ttl?: number) => {
     cache.current.set(key, data, ttl);
-    setCacheStats(cache.current.getStats());
+    // Only update stats periodically to avoid infinite loops
   }, []);
 
   const get = useCallback((key: string): T | null => {
     const result = cache.current.get(key);
-    setCacheStats(cache.current.getStats());
+    // Only update stats periodically to avoid infinite loops
     return result;
   }, []);
 
   const invalidate = useCallback((key: string) => {
     cache.current.delete(key);
-    setCacheStats(cache.current.getStats());
   }, []);
 
   const clear = useCallback(() => {
     cache.current.clear();
-    setCacheStats(cache.current.getStats());
   }, []);
 
   // Enhanced caching with stale-while-revalidate pattern
@@ -173,6 +171,15 @@ export function useOptimizedCache<T>(config: CacheConfig = {}) {
       throw error;
     }
   }, [get, set]);
+
+  // Periodic stats update to avoid infinite loops
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCacheStats(cache.current.getStats());
+    }, 5000); // Update stats every 5 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Cleanup on unmount
   useEffect(() => {

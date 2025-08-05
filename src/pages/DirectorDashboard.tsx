@@ -45,6 +45,7 @@ const DirectorDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId] = useState(`director_${Math.random().toString(36).substr(2, 9)}`);
+  const [selectedCameraId, setSelectedCameraId] = useState<string | null>(null);
   
   // Use real-time hooks
   const { viewerCount } = useRealtimePresence({ 
@@ -59,6 +60,10 @@ const DirectorDashboard = () => {
   
 
 
+
+  const handleCameraSelect = useCallback((cameraId: string) => {
+    setSelectedCameraId(cameraId);
+  }, []);
 
   const setActiveCamera = useCallback(async (cameraId: string) => {
     try {
@@ -80,6 +85,9 @@ const DirectorDashboard = () => {
       await supabase.functions.invoke('switch-camera', {
         body: { eventId, cameraId }
       });
+
+      // Set this camera as selected for the main feed
+      setSelectedCameraId(cameraId);
 
       const activeCamera = cameras.find(cam => cam.id === cameraId);
       if (activeCamera) {
@@ -230,6 +238,44 @@ const DirectorDashboard = () => {
           
           {/* Camera Grid */}
           <div className="lg:col-span-3 space-y-4">
+            {/* Main Program Feed Display */}
+            {selectedCameraId && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Monitor className="h-5 w-5" />
+                    Live Program Feed
+                  </CardTitle>
+                  <CardDescription>
+                    Currently showing: {cameras.find(c => c.id === selectedCameraId)?.device_label}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="aspect-video bg-black rounded-lg flex items-center justify-center relative overflow-hidden">
+                    {event?.program_url ? (
+                      <video
+                        className="w-full h-full object-cover"
+                        src={event.program_url}
+                        autoPlay
+                        muted
+                        playsInline
+                        controls={false}
+                        onError={(e) => {
+                          console.error('Video playback error:', e);
+                        }}
+                      />
+                    ) : (
+                      <div className="text-white text-center">
+                        <Monitor className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                        <p className="text-lg font-medium">Program Feed</p>
+                        <p className="text-sm opacity-75">Start streaming to see live video</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex items-center justify-between">
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Users className="h-6 w-6" />
@@ -254,6 +300,8 @@ const DirectorDashboard = () => {
                     key={camera.id}
                     camera={camera}
                     onActivate={setActiveCamera}
+                    onSelect={handleCameraSelect}
+                    isSelected={selectedCameraId === camera.id}
                   />
                 ))}
               </div>

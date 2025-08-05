@@ -15,9 +15,11 @@ interface Camera {
 interface CameraCardProps {
   camera: Camera;
   onActivate: (cameraId: string) => void;
+  onSelect?: (cameraId: string) => void;
+  isSelected?: boolean;
 }
 
-const CameraCard = memo(({ camera, onActivate }: CameraCardProps) => {
+const CameraCard = memo(({ camera, onActivate, onSelect, isSelected = false }: CameraCardProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoError, setVideoError] = useState(false);
   const [eventStreamUrl, setEventStreamUrl] = useState<string | null>(null);
@@ -66,12 +68,20 @@ const CameraCard = memo(({ camera, onActivate }: CameraCardProps) => {
   }, [camera.is_live, eventStreamUrl]);
 
   const handleClick = () => {
+    // If there's an onSelect prop, use it for preview selection
+    if (onSelect) {
+      onSelect(camera.id);
+    }
+    // Always activate the camera when clicked
     onActivate(camera.id);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
+      if (onSelect) {
+        onSelect(camera.id);
+      }
       onActivate(camera.id);
     }
   };
@@ -90,6 +100,8 @@ const CameraCard = memo(({ camera, onActivate }: CameraCardProps) => {
       className={`cursor-pointer transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
         camera.is_active 
           ? 'ring-2 ring-primary bg-primary/5' 
+          : isSelected
+          ? 'ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-950'
           : 'hover:bg-muted/50'
       }`}
       onClick={handleClick}
