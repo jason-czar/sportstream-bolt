@@ -7,7 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ErrorBoundary from "@/components/error/ErrorBoundary";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import OfflineIndicator from "@/components/ui/OfflineIndicator";
+import { CompactOfflineIndicator } from "@/components/ui/OfflineIndicator";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
@@ -75,7 +75,11 @@ const App = () => {
             </Routes>
           </AuthProvider>
         </BrowserRouter>
-        {!isOnline && <OfflineIndicator />}
+        {!isOnline && (
+          <div className="fixed top-4 right-4 z-50">
+            <CompactOfflineIndicator />
+          </div>
+        )}
       </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
