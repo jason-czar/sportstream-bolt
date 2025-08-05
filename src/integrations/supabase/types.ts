@@ -14,7 +14,131 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      cameras: {
+        Row: {
+          created_at: string
+          device_label: string
+          event_id: string
+          id: string
+          is_active: boolean
+          is_live: boolean
+          stream_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          device_label: string
+          event_id: string
+          id?: string
+          is_active?: boolean
+          is_live?: boolean
+          stream_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          device_label?: string
+          event_id?: string
+          id?: string
+          is_active?: boolean
+          is_live?: boolean
+          stream_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cameras_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events: {
+        Row: {
+          created_at: string
+          event_code: string
+          expected_duration: number | null
+          id: string
+          mux_stream_id: string | null
+          name: string
+          program_url: string | null
+          sport: string
+          start_time: string
+          status: string
+          twitch_key: string | null
+          updated_at: string
+          youtube_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_code: string
+          expected_duration?: number | null
+          id?: string
+          mux_stream_id?: string | null
+          name: string
+          program_url?: string | null
+          sport: string
+          start_time: string
+          status?: string
+          twitch_key?: string | null
+          updated_at?: string
+          youtube_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_code?: string
+          expected_duration?: number | null
+          id?: string
+          mux_stream_id?: string | null
+          name?: string
+          program_url?: string | null
+          sport?: string
+          start_time?: string
+          status?: string
+          twitch_key?: string | null
+          updated_at?: string
+          youtube_key?: string | null
+        }
+        Relationships: []
+      }
+      switch_logs: {
+        Row: {
+          camera_id: string
+          event_id: string
+          id: string
+          timestamp: string
+        }
+        Insert: {
+          camera_id: string
+          event_id: string
+          id?: string
+          timestamp?: string
+        }
+        Update: {
+          camera_id?: string
+          event_id?: string
+          id?: string
+          timestamp?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "switch_logs_camera_id_fkey"
+            columns: ["camera_id"]
+            isOneToOne: false
+            referencedRelation: "cameras"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "switch_logs_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
