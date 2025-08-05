@@ -14,6 +14,7 @@ import { toastService } from '@/lib/toast-service';
 import AppHeader from '@/components/AppHeader';
 import LoadingButton from '@/components/ui/LoadingButton';
 import ErrorMessage from '@/components/error/ErrorMessage';
+import { useNavigate } from 'react-router-dom';
 import { 
   User, 
   Mail, 
@@ -31,6 +32,7 @@ import {
 const UserProfile = () => {
   const { user, profile, userRoles, loading: authLoading } = useAuth();
   const { handleAsyncError } = useErrorHandler();
+  const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Profile editing state
@@ -465,7 +467,19 @@ const UserProfile = () => {
                     ) : userEvents.length > 0 ? (
                       <div className="space-y-3">
                         {userEvents.map((event: any) => (
-                          <div key={event.id} className="flex items-center justify-between p-3 border rounded-lg">
+                          <div 
+                            key={event.id} 
+                            className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
+                              event.status === 'live' || event.status === 'scheduled' 
+                                ? 'hover:bg-muted/50 cursor-pointer' 
+                                : 'opacity-60'
+                            }`}
+                            onClick={() => {
+                              if (event.status === 'live' || event.status === 'scheduled') {
+                                navigate(`/director/${event.id}`);
+                              }
+                            }}
+                          >
                             <div className="flex items-center space-x-3">
                               <Eye className="h-4 w-4 text-muted-foreground" />
                               <div>
