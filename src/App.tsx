@@ -8,6 +8,7 @@ import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ErrorBoundary from "@/components/error/ErrorBoundary";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { CompactOfflineIndicator } from "@/components/ui/OfflineIndicator";
+import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
@@ -23,8 +24,9 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <ErrorBoundary>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <TooltipProvider>
+          <ErrorBoundary>
           <Toaster />
           <Sonner />
           <BrowserRouter>
@@ -80,8 +82,9 @@ const App = () => {
             <CompactOfflineIndicator />
           </div>
         )}
-      </ErrorBoundary>
-    </TooltipProvider>
+        </ErrorBoundary>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
   );
 };
