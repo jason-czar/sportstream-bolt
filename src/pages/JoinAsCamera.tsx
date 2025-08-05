@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import LoadingButton from "@/components/ui/LoadingButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -231,12 +232,13 @@ const JoinAsCamera = () => {
                           maxLength={6}
                           className="uppercase"
                         />
-                        <Button 
+                        <LoadingButton 
                           onClick={validateEventCode}
-                          disabled={loading || !eventCode.trim() || !isOnline}
+                          loading={loading && !eventData}
+                          disabled={!eventCode.trim() || !isOnline}
                         >
                           {!isOnline ? 'Offline' : 'Validate'}
-                        </Button>
+                        </LoadingButton>
                       </div>
                     </div>
                   </TabsContent>
@@ -273,13 +275,15 @@ const JoinAsCamera = () => {
                   />
                 </div>
 
-                <Button 
+                <LoadingButton 
                   onClick={registerCamera}
                   className="w-full"
-                  disabled={loading || !eventData || !deviceLabel.trim() || !stream || !isOnline}
+                  loading={loading && eventData}
+                  loadingText="Connecting..."
+                  disabled={!eventData || !deviceLabel.trim() || !stream || !isOnline}
                 >
-                  {loading ? "Connecting..." : !isOnline ? "Offline - Cannot Join Event" : "Join Event as Camera"}
-                </Button>
+                  {!isOnline ? "Offline - Cannot Join Event" : "Join Event as Camera"}
+                </LoadingButton>
               </div>
             </div>
           </CardContent>

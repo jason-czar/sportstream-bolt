@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import LoadingButton from "@/components/ui/LoadingButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -200,10 +201,15 @@ const CreateEvent = () => {
                     Back to Home
                   </Link>
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading || !isOnline}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <LoadingButton 
+                  type="submit" 
+                  className="flex-1"
+                  loading={loading}
+                  loadingText="Creating Event..."
+                  disabled={!isOnline}
+                >
                   {!isOnline ? 'Offline - Cannot Create Event' : 'Create Event'}
-                </Button>
+                </LoadingButton>
               </div>
             </form>
           </CardContent>

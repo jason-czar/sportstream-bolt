@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
+import LoadingButton from "@/components/ui/LoadingButton";
+import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
+import LoadingOverlay from "@/components/ui/LoadingOverlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -269,14 +272,15 @@ const DirectorDashboard = () => {
                 )}
                 
                 {event?.youtube_key || event?.twitch_key ? (
-                  <Button 
+                  <LoadingButton 
                     onClick={addSimulcastTargets} 
                     variant="outline"
-                    disabled={loading || streaming}
+                    loading={loading && !streaming}
+                    disabled={streaming}
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Add Simulcast
-                  </Button>
+                  </LoadingButton>
                 ) : null}
               </div>
             </div>
