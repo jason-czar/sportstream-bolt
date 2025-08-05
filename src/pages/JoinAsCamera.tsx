@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import LoadingButton from "@/components/ui/LoadingButton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
 
 const JoinAsCamera = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { session } = useAuth();
   const { handleAsyncError } = useErrorHandler();
   const { isOnline } = useOnlineStatus();
@@ -28,6 +29,23 @@ const JoinAsCamera = () => {
   const [loading, setLoading] = useState(false);
   const [eventData, setEventData] = useState<any>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+
+  // Set event code from URL parameters on mount
+  useEffect(() => {
+    const codeFromUrl = searchParams.get('code');
+    if (codeFromUrl) {
+      setEventCode(codeFromUrl.toUpperCase());
+    }
+  }, [searchParams]);
+
+  // Auto-validate when event code is set from QR code
+  useEffect(() => {
+    if (eventCode && searchParams.get('code') && !eventData) {
+      setTimeout(() => {
+        validateEventCode();
+      }, 500);
+    }
+  }, [eventCode, searchParams, eventData]);
 
   useEffect(() => {
     startVideoPreview();

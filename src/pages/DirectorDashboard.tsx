@@ -17,6 +17,7 @@ import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import CameraCard from "@/components/CameraCard";
 import EventHeader from "@/components/EventHeader";
+import EventQRCode from "@/components/EventQRCode";
 
 interface Camera {
   id: string;
@@ -197,36 +198,49 @@ const DirectorDashboard = () => {
           />
         )}
 
-        {/* Camera Grid */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold flex items-center gap-2">
-              <Users className="h-6 w-6" />
-              Connected Cameras ({cameras.length}/8)
-            </h2>
-          </div>
-
-          {cameras.length === 0 ? (
-            <Card>
-              <CardContent className="text-center py-12">
-                <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <h3 className="text-lg font-semibold mb-2">No Cameras Connected</h3>
-                <p className="text-muted-foreground mb-4">
-                  Share the event code <span className="font-mono font-bold">{event?.event_code}</span> with camera operators to get started.
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {cameras.map((camera) => (
-                <CameraCard
-                  key={camera.id}
-                  camera={camera}
-                  onActivate={setActiveCamera}
-                />
-              ))}
+        {/* QR Code and Camera Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* QR Code Section */}
+          {event && (
+            <div className="lg:col-span-1">
+              <EventQRCode 
+                eventCode={event.event_code} 
+                eventName={event.name} 
+              />
             </div>
           )}
+          
+          {/* Camera Grid */}
+          <div className="lg:col-span-3 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Users className="h-6 w-6" />
+                Connected Cameras ({cameras.length}/8)
+              </h2>
+            </div>
+
+            {cameras.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12">
+                  <Users className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                  <h3 className="text-lg font-semibold mb-2">No Cameras Connected</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Camera operators can scan the QR code or use event code <span className="font-mono font-bold">{event?.event_code}</span> to connect.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {cameras.map((camera) => (
+                  <CameraCard
+                    key={camera.id}
+                    camera={camera}
+                    onActivate={setActiveCamera}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Program Feed Info */}
