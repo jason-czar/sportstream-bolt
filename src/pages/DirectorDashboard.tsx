@@ -18,6 +18,7 @@ import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import CameraCard from "@/components/CameraCard";
 import EventHeader from "@/components/EventHeader";
 import EventQRCode from "@/components/EventQRCode";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 interface Camera {
   id: string;
@@ -44,6 +45,7 @@ const DirectorDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUserId] = useState(`director_${Math.random().toString(36).substr(2, 9)}`);
+  const [platformSheetOpen, setPlatformSheetOpen] = useState(false);
   
   // Use real-time hooks
   const { viewerCount } = useRealtimePresence({ 
@@ -92,13 +94,13 @@ const DirectorDashboard = () => {
     }
   }, [eventId, cameras]);
 
-  const startStream = useCallback(async () => {
+  const startStream = useCallback(async (platform: 'youtube' | 'twitch') => {
     try {
       setLoading(true);
-      console.log('Starting stream for event:', eventId);
+      console.log('Starting stream for event:', eventId, 'on platform:', platform);
       
       const { data, error } = await supabase.functions.invoke('start-stream', {
-        body: { eventId }
+        body: { eventId, platform }
       });
 
       if (error) {
@@ -113,6 +115,7 @@ const DirectorDashboard = () => {
         .update({ status: 'live' })
         .eq('id', eventId);
 
+      setPlatformSheetOpen(false);
       toastService.event.streamStarted();
     } catch (error) {
       console.error('Error starting stream:', error);
@@ -124,6 +127,10 @@ const DirectorDashboard = () => {
       setLoading(false);
     }
   }, [eventId]);
+
+  const handleStartStream = useCallback(() => {
+    setPlatformSheetOpen(true);
+  }, []);
 
   const endStream = useCallback(async () => {
     try {
@@ -206,7 +213,7 @@ const DirectorDashboard = () => {
             viewerCount={viewerCount}
             streaming={streaming}
             loading={loading}
-            onStartStream={startStream}
+            onStartStream={handleStartStream}
             onEndStream={endStream}
             onAddSimulcast={addSimulcastTargets}
             cameraCount={cameras.length}
@@ -334,6 +341,43 @@ const DirectorDashboard = () => {
             </CardContent>
           </Card>
         )}
+
+        {/* Platform Selection Sheet */}
+        <Sheet open={platformSheetOpen} onOpenChange={setPlatformSheetOpen}>
+          <SheetContent side="bottom" className="sm:max-w-md sm:mx-auto">
+            <SheetHeader>
+              <SheetTitle>Select Streaming Platform</SheetTitle>
+              <SheetDescription>
+                Choose which platform you want to stream to before starting the live stream.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="grid grid-cols-1 gap-4 py-6">
+              <Button
+                onClick={() => startStream('youtube')}
+                disabled={loading}
+                className="h-16 text-left justify-start gap-4 bg-red-600 hover:bg-red-700 text-white"
+              >
+                <Youtube className="h-8 w-8" />
+                <div>
+                  <div className="font-semibold">YouTube Live</div>
+                  <div className="text-sm opacity-90">Stream to YouTube</div>
+                </div>
+              </Button>
+              <Button
+                onClick={() => startStream('twitch')}
+                disabled={loading}
+                variant="outline"
+                className="h-16 text-left justify-start gap-4 border-purple-600 text-purple-600 hover:bg-purple-50"
+              >
+                <Twitch className="h-8 w-8" />
+                <div>
+                  <div className="font-semibold">Twitch Live</div>
+                  <div className="text-sm opacity-70">Stream to Twitch</div>
+                </div>
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
