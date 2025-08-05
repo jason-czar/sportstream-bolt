@@ -52,27 +52,35 @@ serve(async (req) => {
     if (streamingType === 'telegram') {
       console.log('Setting up Telegram channel for event...');
       
-      const telegramResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-bot`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'createChannel',
-          eventName: name,
-          eventCode
-        })
-      });
+      try {
+        const telegramResponse = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/telegram-bot`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
+          },
+          body: JSON.stringify({
+            action: 'createChannel',
+            eventName: name,
+            eventCode
+          })
+        });
 
-      if (!telegramResponse.ok) {
-        const error = await telegramResponse.text();
-        console.error('Telegram channel creation failed:', error);
-        throw new Error('Failed to create Telegram channel for event');
+        if (!telegramResponse.ok) {
+          const errorText = await telegramResponse.text();
+          console.error('Telegram channel creation failed:', errorText);
+          console.warn('Proceeding without Telegram channel - will create event with basic setup');
+          // Don't fail the whole operation, just proceed without Telegram integration
+        } else {
+          const telegramResult = await telegramResponse.json();
+          telegramChannelData = telegramResult.data;
+          console.log('Telegram channel created:', telegramChannelData);
+        }
+      } catch (error) {
+        console.error('Error setting up Telegram channel:', error);
+        console.warn('Proceeding without Telegram channel - will create event with basic setup');
+        // Don't fail the whole operation, just proceed without Telegram integration
       }
-
-      const telegramResult = await telegramResponse.json();
-      telegramChannelData = telegramResult.data;
-      console.log('Telegram channel created:', telegramChannelData);
     }
 
     // Streaming keys are now stored securely in environment variables
@@ -149,6 +157,7 @@ serve(async (req) => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')}`
           },
           body: JSON.stringify({
             action: 'sendNotification',
