@@ -23,10 +23,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get event data with stream keys
+    // Get event data 
     const { data: eventData, error: eventError } = await supabase
       .from('events')
-      .select('mux_stream_id, youtube_key, twitch_key, status')
+      .select('mux_stream_id, status')
       .eq('id', eventId)
       .single();
 
@@ -49,19 +49,23 @@ serve(async (req) => {
     const auth = btoa(`${muxTokenId}:${muxSecretKey}`);
     const simulcastTargets = [];
 
+    // Get streaming keys from secure environment variables
+    const youtubeKey = Deno.env.get('YOUTUBE_STREAM_KEY');
+    const twitchKey = Deno.env.get('TWITCH_STREAM_KEY');
+
     // Add YouTube simulcast target if key provided
-    if (eventData.youtube_key) {
+    if (youtubeKey) {
       simulcastTargets.push({
         url: "rtmp://a.rtmp.youtube.com/live2",
-        stream_key: eventData.youtube_key
+        stream_key: youtubeKey
       });
     }
 
     // Add Twitch simulcast target if key provided
-    if (eventData.twitch_key) {
+    if (twitchKey) {
       simulcastTargets.push({
         url: "rtmp://live.twitch.tv/app",
-        stream_key: eventData.twitch_key
+        stream_key: twitchKey
       });
     }
 

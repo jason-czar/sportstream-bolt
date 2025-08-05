@@ -70,10 +70,8 @@ export type Database = {
           sport: string
           start_time: string
           status: Database["public"]["Enums"]["event_status"]
-          twitch_key: string | null
           updated_at: string
           viewer_count: number | null
-          youtube_key: string | null
         }
         Insert: {
           created_at?: string
@@ -89,10 +87,8 @@ export type Database = {
           sport: string
           start_time: string
           status?: Database["public"]["Enums"]["event_status"]
-          twitch_key?: string | null
           updated_at?: string
           viewer_count?: number | null
-          youtube_key?: string | null
         }
         Update: {
           created_at?: string
@@ -108,10 +104,8 @@ export type Database = {
           sport?: string
           start_time?: string
           status?: Database["public"]["Enums"]["event_status"]
-          twitch_key?: string | null
           updated_at?: string
           viewer_count?: number | null
-          youtube_key?: string | null
         }
         Relationships: []
       }
@@ -139,6 +133,42 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      security_audit_logs: {
+        Row: {
+          action: string
+          created_at: string | null
+          details: Json | null
+          id: string
+          ip_address: string | null
+          resource_id: string | null
+          resource_type: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          resource_id?: string | null
+          resource_type?: string
+          user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
