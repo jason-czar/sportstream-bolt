@@ -13,6 +13,7 @@ import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
 import JoinAsCamera from "./pages/JoinAsCamera";
+import CameraStream from "./pages/CameraStream";
 import DirectorDashboard from "./pages/DirectorDashboard";
 import ViewerPage from "./pages/ViewerPage";
 import NotFound from "./pages/NotFound";
@@ -69,6 +70,16 @@ const App = () => {
                 element={
                   <ErrorBoundary>
                     <ViewerPage />
+                  </ErrorBoundary>
+                } 
+              />
+              <Route 
+                path="/camera/:cameraId" 
+                element={
+                  <ErrorBoundary>
+                    <ProtectedRoute>
+                      <CameraStream />
+                    </ProtectedRoute>
                   </ErrorBoundary>
                 } 
               />
