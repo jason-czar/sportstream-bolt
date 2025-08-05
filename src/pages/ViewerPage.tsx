@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,21 +29,59 @@ const ViewerPage = () => {
     eventId: eventId || '', 
     userId: currentUserId 
   });
+
+  const initializePlayer = useCallback(() => {
+    if (!videoRef.current) return;
+
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+    }
+
+    const programUrl = videoRef.current.dataset.programUrl;
+    if (!programUrl) return;
+
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 90
+      });
+      
+      hlsRef.current = hls;
+      hls.loadSource(programUrl);
+      hls.attachMedia(videoRef.current);
+      
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        videoRef.current?.play();
+      });
+
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error('HLS Error:', data);
+      });
+    } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+      // Safari native HLS support
+      videoRef.current.src = programUrl;
+      videoRef.current.addEventListener('loadedmetadata', () => {
+        videoRef.current?.play();
+      });
+    }
+  }, []);
   
   const { event, loading } = useRealtimeEventUpdates({
     eventId: eventId || '',
-    onEventUpdate: (updatedEvent) => {
+    onEventUpdate: useCallback((updatedEvent) => {
       // Re-initialize player if program URL changes
-      if (updatedEvent.program_url !== event?.program_url) {
-        setTimeout(() => initializePlayer(), 100);
+      if (videoRef.current) {
+        videoRef.current.dataset.programUrl = updatedEvent.program_url;
+        setTimeout(initializePlayer, 100);
       }
-    },
-    onCameraSwitch: () => {
+    }, [initializePlayer]),
+    onCameraSwitch: useCallback(() => {
       // Reload HLS when camera switches
-      if (hlsRef.current && event?.program_url) {
-        hlsRef.current.loadSource(event.program_url);
+      if (hlsRef.current && videoRef.current?.dataset.programUrl) {
+        hlsRef.current.loadSource(videoRef.current.dataset.programUrl);
       }
-    }
+    }, [])
   });
 
   useEffect(() => {
@@ -56,44 +94,10 @@ const ViewerPage = () => {
 
   useEffect(() => {
     if (event?.program_url && videoRef.current) {
+      videoRef.current.dataset.programUrl = event.program_url;
       initializePlayer();
     }
-  }, [event?.program_url]);
-
-
-  const initializePlayer = () => {
-    if (!videoRef.current || !event?.program_url) return;
-
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-    }
-
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90
-      });
-      
-      hlsRef.current = hls;
-      hls.loadSource(event.program_url);
-      hls.attachMedia(videoRef.current);
-      
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        videoRef.current?.play();
-      });
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        console.error('HLS Error:', data);
-      });
-    } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      // Safari native HLS support
-      videoRef.current.src = event.program_url;
-      videoRef.current.addEventListener('loadedmetadata', () => {
-        videoRef.current?.play();
-      });
-    }
-  };
+  }, [event?.program_url, initializePlayer]);
 
   if (loading) {
     return (
@@ -200,12 +204,12 @@ const ViewerPage = () => {
             <Eye className="h-3 w-3 mr-1" />
             {viewerCount.toLocaleString()} watching
           </Badge>
-          {onlineUsers.length > 0 && (
+          {useMemo(() => onlineUsers.length > 0 && (
             <Badge variant="outline" className="bg-black/50 text-white border-white/20">
               <Users className="h-3 w-3 mr-1" />
               {onlineUsers.length} live
             </Badge>
-          )}
+          ), [onlineUsers.length])}
         </div>
       </div>
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
@@ -18,6 +18,27 @@ export const useRealtimePresence = ({ eventId, userId }: UseRealtimePresenceProp
   const [onlineUsers, setOnlineUsers] = useState<PresenceUser[]>([]);
   const [channel, setChannel] = useState<RealtimeChannel | null>(null);
 
+  const handlePresenceSync = useCallback(() => {
+    if (!channel) return;
+    
+    const newState = channel.presenceState() as Record<string, PresenceUser[]>;
+    setPresenceState(newState);
+    
+    // Flatten the presence state to get all online users
+    const users = Object.values(newState).flat().filter((user): user is PresenceUser => 
+      user && typeof user === 'object' && 'user_id' in user && 'online_at' in user
+    );
+    setOnlineUsers(users);
+  }, [channel]);
+
+  const handlePresenceJoin = useCallback(({ key, newPresences }) => {
+    console.log('User joined:', key, newPresences);
+  }, []);
+
+  const handlePresenceLeave = useCallback(({ key, leftPresences }) => {
+    console.log('User left:', key, leftPresences);
+  }, []);
+
   useEffect(() => {
     if (!eventId) return;
 
@@ -30,22 +51,9 @@ export const useRealtimePresence = ({ eventId, userId }: UseRealtimePresenceProp
     });
 
     presenceChannel
-      .on('presence', { event: 'sync' }, () => {
-        const newState = presenceChannel.presenceState() as Record<string, PresenceUser[]>;
-        setPresenceState(newState);
-        
-        // Flatten the presence state to get all online users
-        const users = Object.values(newState).flat().filter((user): user is PresenceUser => 
-          user && typeof user === 'object' && 'user_id' in user && 'online_at' in user
-        );
-        setOnlineUsers(users);
-      })
-      .on('presence', { event: 'join' }, ({ key, newPresences }) => {
-        console.log('User joined:', key, newPresences);
-      })
-      .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        console.log('User left:', key, leftPresences);
-      })
+      .on('presence', { event: 'sync' }, handlePresenceSync)
+      .on('presence', { event: 'join' }, handlePresenceJoin)
+      .on('presence', { event: 'leave' }, handlePresenceLeave)
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED' && userId) {
           const userStatus = {
@@ -65,9 +73,9 @@ export const useRealtimePresence = ({ eventId, userId }: UseRealtimePresenceProp
         supabase.removeChannel(presenceChannel);
       }
     };
-  }, [eventId, userId]);
+  }, [eventId, userId, handlePresenceSync, handlePresenceJoin, handlePresenceLeave]);
 
-  const updatePresence = async (data: Partial<PresenceUser>) => {
+  const updatePresence = useCallback(async (data: Partial<PresenceUser>) => {
     if (channel && userId) {
       await channel.track({
         user_id: userId,
@@ -75,12 +83,14 @@ export const useRealtimePresence = ({ eventId, userId }: UseRealtimePresenceProp
         ...data
       });
     }
-  };
+  }, [channel, userId]);
+
+  const viewerCount = useMemo(() => onlineUsers.length, [onlineUsers.length]);
 
   return {
     onlineUsers,
     presenceState,
-    viewerCount: onlineUsers.length,
+    viewerCount,
     updatePresence
   };
 };

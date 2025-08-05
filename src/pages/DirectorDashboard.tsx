@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import LoadingButton from "@/components/ui/LoadingButton";
 import LoadingSkeleton from "@/components/ui/LoadingSkeleton";
@@ -15,13 +15,15 @@ import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Play, Square, Users, Wifi, WifiOff, Monitor, Settings, Eye } from "lucide-react";
 import { useRealtimePresence } from "@/hooks/useRealtimePresence";
 import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
+import CameraCard from "@/components/CameraCard";
+import EventHeader from "@/components/EventHeader";
 
 interface Camera {
   id: string;
   device_label: string;
   is_live: boolean;
   is_active: boolean;
-  stream_key: string;
+  event_id: string;
 }
 
 interface EventData {
@@ -31,8 +33,8 @@ interface EventData {
   event_code: string;
   status: string;
   program_url: string;
-  youtube_key: string;
-  twitch_key: string;
+  youtube_key?: string;
+  twitch_key?: string;
 }
 
 const DirectorDashboard = () => {
@@ -52,11 +54,11 @@ const DirectorDashboard = () => {
     eventId: eventId || ''
   });
   
-  const streaming = event?.status === 'live';
+  
 
 
 
-  const setActiveCamera = async (cameraId: string) => {
+  const setActiveCamera = useCallback(async (cameraId: string) => {
     try {
       // First, deactivate all cameras
       await supabase
@@ -87,9 +89,9 @@ const DirectorDashboard = () => {
         description: "Failed to switch camera. Please try again.",
       });
     }
-  };
+  }, [eventId, cameras]);
 
-  const startStream = async () => {
+  const startStream = useCallback(async () => {
     try {
       setLoading(true);
       const { error } = await supabase.functions.invoke('start-stream', {
@@ -112,9 +114,9 @@ const DirectorDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
-  const endStream = async () => {
+  const endStream = useCallback(async () => {
     try {
       setLoading(true);
       const { error } = await supabase.functions.invoke('end-stream', {
@@ -137,9 +139,9 @@ const DirectorDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
 
-  const addSimulcastTargets = async () => {
+  const addSimulcastTargets = useCallback(async () => {
     try {
       setLoading(true);
       const { error } = await supabase.functions.invoke('add-simulcast', {
@@ -157,7 +159,9 @@ const DirectorDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [eventId]);
+
+  const streaming = useMemo(() => event?.status === 'live', [event?.status]);
 
   if (dataLoading && !event) {
     return <LoadingSpinner fullScreen text="Loading director dashboard..." />;
@@ -180,56 +184,18 @@ const DirectorDashboard = () => {
     <div className="min-h-screen bg-background p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Event Header */}
-        <Card>
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Monitor className="h-6 w-6" />
-                  {event?.name}
-                </CardTitle>
-                <CardDescription className="flex items-center gap-4 flex-wrap">
-                  <span>Event Code: <span className="font-mono font-bold">{event?.event_code}</span></span>
-                  <span>Sport: {event?.sport}</span>
-                  <Badge variant={streaming ? "default" : "secondary"}>
-                    {event?.status}
-                  </Badge>
-                  {viewerCount > 0 && (
-                    <Badge variant="outline" className="flex items-center gap-1">
-                      <Eye className="h-3 w-3" />
-                      {viewerCount} watching
-                    </Badge>
-                  )}
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                {!streaming ? (
-                  <Button onClick={startStream} disabled={loading || cameras.length === 0}>
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Stream
-                  </Button>
-                ) : (
-                  <Button onClick={endStream} variant="destructive" disabled={loading}>
-                    <Square className="h-4 w-4 mr-2" />
-                    End Stream
-                  </Button>
-                )}
-                
-                {event?.youtube_key || event?.twitch_key ? (
-                  <LoadingButton 
-                    onClick={addSimulcastTargets} 
-                    variant="outline"
-                    loading={loading && !streaming}
-                    disabled={streaming}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Add Simulcast
-                  </LoadingButton>
-                ) : null}
-              </div>
-            </div>
-          </CardHeader>
-        </Card>
+        {event && (
+          <EventHeader
+            event={event}
+            viewerCount={viewerCount}
+            streaming={streaming}
+            loading={loading}
+            onStartStream={startStream}
+            onEndStream={endStream}
+            onAddSimulcast={addSimulcastTargets}
+            cameraCount={cameras.length}
+          />
+        )}
 
         {/* Camera Grid */}
         <div className="space-y-4">
@@ -253,46 +219,11 @@ const DirectorDashboard = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {cameras.map((camera) => (
-                <Card 
-                  key={camera.id} 
-                  className={`cursor-pointer transition-all ${
-                    camera.is_active 
-                      ? 'ring-2 ring-primary bg-primary/5' 
-                      : 'hover:bg-muted/50'
-                  }`}
-                  onClick={() => setActiveCamera(camera.id)}
-                >
-                  <CardHeader className="pb-3">
-                    <div className="flex justify-between items-start">
-                      <CardTitle className="text-sm">{camera.device_label}</CardTitle>
-                      <div className="flex gap-1">
-                        {camera.is_live ? (
-                          <Wifi className="h-4 w-4 text-green-500" />
-                        ) : (
-                          <WifiOff className="h-4 w-4 text-red-500" />
-                        )}
-                        {camera.is_active && (
-                          <Badge variant="default" className="text-xs">LIVE</Badge>
-                        )}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="aspect-video bg-muted rounded-md flex items-center justify-center">
-                      {camera.is_live ? (
-                        <div className="text-center">
-                          <div className="w-8 h-8 bg-red-500 rounded-full mx-auto mb-2 animate-pulse"></div>
-                          <p className="text-xs text-muted-foreground">Live Feed</p>
-                        </div>
-                      ) : (
-                        <div className="text-center">
-                          <WifiOff className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-                          <p className="text-xs text-muted-foreground">Offline</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <CameraCard
+                  key={camera.id}
+                  camera={camera}
+                  onActivate={setActiveCamera}
+                />
               ))}
             </div>
           )}
