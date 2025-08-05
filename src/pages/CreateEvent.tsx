@@ -10,6 +10,7 @@ import { toastService } from "@/lib/toast-service";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -17,6 +18,7 @@ const CreateEvent = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { handleAsyncError } = useErrorHandler();
+  const { isOnline } = useOnlineStatus();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     eventName: "",
@@ -29,6 +31,14 @@ const CreateEvent = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isOnline) {
+      toastService.error({
+        description: 'Cannot create event while offline. Please check your connection.'
+      });
+      return;
+    }
+    
     setLoading(true);
 
     const { data, error } = await handleAsyncError(async () => {
@@ -190,9 +200,9 @@ const CreateEvent = () => {
                     Back to Home
                   </Link>
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading}>
+                <Button type="submit" className="flex-1" disabled={loading || !isOnline}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Event
+                  {!isOnline ? 'Offline - Cannot Create Event' : 'Create Event'}
                 </Button>
               </div>
             </form>

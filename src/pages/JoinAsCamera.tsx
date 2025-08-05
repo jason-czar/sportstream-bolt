@@ -9,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { toastService } from "@/lib/toast-service";
 import { useAuth } from "@/hooks/useAuth";
 import { useErrorHandler } from "@/hooks/useErrorHandler";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import ErrorMessage from "@/components/error/ErrorMessage";
 import { Camera, Video, VideoOff, Loader2 } from "lucide-react";
@@ -17,6 +18,7 @@ const JoinAsCamera = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
   const { handleAsyncError } = useErrorHandler();
+  const { isOnline } = useOnlineStatus();
   const videoRef = useRef<HTMLVideoElement>(null);
   const [eventCode, setEventCode] = useState("");
   const [deviceLabel, setDeviceLabel] = useState("");
@@ -65,6 +67,13 @@ const JoinAsCamera = () => {
   };
 
   const validateEventCode = async () => {
+    if (!isOnline) {
+      toastService.error({
+        description: 'Cannot validate event code while offline. Please check your connection.'
+      });
+      return;
+    }
+
     if (!eventCode.trim()) {
       toastService.error({
         description: "Please enter an event code.",
@@ -224,9 +233,9 @@ const JoinAsCamera = () => {
                         />
                         <Button 
                           onClick={validateEventCode}
-                          disabled={loading || !eventCode.trim()}
+                          disabled={loading || !eventCode.trim() || !isOnline}
                         >
-                          Validate
+                          {!isOnline ? 'Offline' : 'Validate'}
                         </Button>
                       </div>
                     </div>
@@ -267,9 +276,9 @@ const JoinAsCamera = () => {
                 <Button 
                   onClick={registerCamera}
                   className="w-full"
-                  disabled={loading || !eventData || !deviceLabel.trim() || !stream}
+                  disabled={loading || !eventData || !deviceLabel.trim() || !stream || !isOnline}
                 >
-                  {loading ? "Connecting..." : "Join Event as Camera"}
+                  {loading ? "Connecting..." : !isOnline ? "Offline - Cannot Join Event" : "Join Event as Camera"}
                 </Button>
               </div>
             </div>

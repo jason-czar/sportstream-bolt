@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import ProtectedRoute from "@/components/auth/ProtectedRoute";
 import ErrorBoundary from "@/components/error/ErrorBoundary";
+import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import OfflineIndicator from "@/components/ui/OfflineIndicator";
 import Index from "./pages/Index";
 import AuthPage from "./pages/AuthPage";
 import CreateEvent from "./pages/CreateEvent";
@@ -16,13 +18,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <ErrorBoundary>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+const App = () => {
+  const { isOnline } = useOnlineStatus();
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <ErrorBoundary>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <AuthProvider>
             <Routes>
               <Route path="/" element={<Index />} />
@@ -70,9 +75,11 @@ const App = () => (
             </Routes>
           </AuthProvider>
         </BrowserRouter>
+        {!isOnline && <OfflineIndicator />}
       </ErrorBoundary>
     </TooltipProvider>
   </QueryClientProvider>
-);
+  );
+};
 
 export default App;
