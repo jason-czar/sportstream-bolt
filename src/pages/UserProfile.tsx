@@ -69,8 +69,12 @@ const UserProfile = () => {
   }, [profile, user]);
 
   const loadUserActivity = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user found, cannot load events');
+      return;
+    }
     
+    console.log('Loading events for user:', user.id);
     setLoadingEvents(true);
     try {
       const { data: events, error } = await supabase
@@ -80,7 +84,14 @@ const UserProfile = () => {
         .order('created_at', { ascending: false })
         .limit(5);
 
-      if (error) throw error;
+      console.log('Events query result:', { events, error });
+      
+      if (error) {
+        console.error('Database error:', error);
+        throw error;
+      }
+      
+      console.log('Setting events:', events);
       setUserEvents(events || []);
     } catch (error) {
       console.error('Error loading user events:', error);
