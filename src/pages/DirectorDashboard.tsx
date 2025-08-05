@@ -18,6 +18,7 @@ import { useRealtimeEventUpdates } from "@/hooks/useRealtimeEventUpdates";
 import CameraCard from "@/components/CameraCard";
 import EventHeader from "@/components/EventHeader";
 import EventQRCode from "@/components/EventQRCode";
+import AppHeader from "@/components/AppHeader";
 
 interface Camera {
   id: string;
@@ -197,8 +198,10 @@ const DirectorDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <div className="p-4">
+        <div className="max-w-7xl mx-auto space-y-6">
         {/* Event Header */}
         {event && (
           <EventHeader
@@ -334,6 +337,7 @@ const DirectorDashboard = () => {
             </CardContent>
           </Card>
         )}
+        </div>
       </div>
     </div>
   );

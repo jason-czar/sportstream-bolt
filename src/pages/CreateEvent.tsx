@@ -14,6 +14,7 @@ import { useErrorHandler } from "@/hooks/useErrorHandler";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Link } from "react-router-dom";
+import AppHeader from "@/components/AppHeader";
 
 const CreateEvent = () => {
   const navigate = useNavigate();
@@ -104,8 +105,10 @@ const CreateEvent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+      <div className="p-4">
+        <div className="max-w-2xl mx-auto">
         <Card>
           <CardHeader>
             <CardTitle>Create Sports Event</CardTitle>
@@ -222,6 +225,7 @@ const CreateEvent = () => {
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
