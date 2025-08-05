@@ -29,6 +29,8 @@ const CameraStream: React.FC = () => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [platformSelectOpen, setPlatformSelectOpen] = useState(false);
+  const [selectedPlatform, setSelectedPlatform] = useState<'youtube' | 'twitch' | null>(null);
   const isMobile = useIsMobile();
 
   const state = location.state as LocationState;
@@ -122,11 +124,16 @@ const CameraStream: React.FC = () => {
     }
   };
 
-  const startStreaming = async () => {
-    // TODO: Implement actual RTMP streaming
+  const handleStartStreamClick = () => {
+    setPlatformSelectOpen(true);
+  };
+
+  const startStreaming = async (platform: 'youtube' | 'twitch') => {
+    setSelectedPlatform(platform);
+    setPlatformSelectOpen(false);
     setIsStreaming(true);
     toastService.success({
-      description: "Camera stream started successfully!",
+      description: `Camera stream started to ${platform === 'youtube' ? 'YouTube' : 'Twitch'}!`,
     });
   };
 
@@ -298,7 +305,7 @@ const CameraStream: React.FC = () => {
             </Sheet>
 
             {!isStreaming ? (
-              <Button size={isMobile ? "default" : "lg"} onClick={startStreaming} className="px-6">
+              <Button size={isMobile ? "default" : "lg"} onClick={handleStartStreamClick} className="px-6">
                 Start Streaming
               </Button>
             ) : (
@@ -309,6 +316,44 @@ const CameraStream: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Platform Selection Sheet */}
+      <Sheet open={platformSelectOpen} onOpenChange={setPlatformSelectOpen}>
+        <SheetContent side="bottom" className="h-[40vh]">
+          <SheetHeader>
+            <SheetTitle>Select Streaming Platform</SheetTitle>
+          </SheetHeader>
+          <div className="mt-6 space-y-4">
+            <p className="text-sm text-muted-foreground">Choose where you want to stream:</p>
+            <div className="space-y-3">
+              <Button
+                variant="outline"
+                onClick={() => startStreaming('youtube')}
+                className="w-full justify-start h-12"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-red-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                    YT
+                  </div>
+                  YouTube
+                </div>
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => startStreaming('twitch')}
+                className="w-full justify-start h-12"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-6 h-6 bg-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">
+                    T
+                  </div>
+                  Twitch
+                </div>
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
