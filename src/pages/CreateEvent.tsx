@@ -25,9 +25,7 @@ const CreateEvent = () => {
     eventName: "",
     sportType: "",
     dateTime: "",
-    expectedDuration: "",
-    youtubeKey: "",
-    twitchKey: ""
+    expectedDuration: ""
   });
 
   // Set default datetime to 1 hour from now
@@ -93,9 +91,7 @@ const CreateEvent = () => {
           sport: formData.sportType,
           startTime: formData.dateTime,
           expectedDuration: parseInt(formData.expectedDuration),
-          eventCode,
-          youtubeKey: formData.youtubeKey.trim(),
-          twitchKey: formData.twitchKey.trim()
+          eventCode
         }
       });
 
@@ -206,28 +202,11 @@ const CreateEvent = () => {
               </div>
 
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold">Simulcast Settings (Optional)</h3>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="youtubeKey">YouTube Live Stream Key</Label>
-                  <Input
-                    id="youtubeKey"
-                    type="password"
-                    value={formData.youtubeKey}
-                    onChange={(e) => setFormData({...formData, youtubeKey: e.target.value})}
-                    placeholder="Enter YouTube stream key"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="twitchKey">Twitch Stream Key</Label>
-                  <Input
-                    id="twitchKey"
-                    type="password"
-                    value={formData.twitchKey}
-                    onChange={(e) => setFormData({...formData, twitchKey: e.target.value})}
-                    placeholder="Enter Twitch stream key"
-                  />
+                <div className="p-4 bg-muted rounded-lg">
+                  <h3 className="text-sm font-medium text-muted-foreground">Live Streaming</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This event will be automatically streamed to the app's YouTube channel (@jason_czar) and Twitch account.
+                  </p>
                 </div>
               </div>
 

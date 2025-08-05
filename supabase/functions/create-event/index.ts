@@ -38,7 +38,11 @@ serve(async (req) => {
       });
     }
 
-    const { name, sport, startTime, expectedDuration, eventCode, youtubeKey, twitchKey } = await req.json();
+    const { name, sport, startTime, expectedDuration, eventCode } = await req.json();
+
+    // Get centralized stream keys
+    const youtubeKey = Deno.env.get('YOUTUBE_STREAM_KEY');
+    const twitchKey = Deno.env.get('TWITCH_STREAM_KEY');
 
     // Initialize Mux client
     const muxTokenId = Deno.env.get('MUX_TOKEN_ID');
